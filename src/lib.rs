@@ -66,13 +66,9 @@ impl Universe {
 
         for row in 0..self.height {
             for col in 0..self.width {
-                println!("idx = {} {}", row, col);
                 let idx = self.get_index(row, col);
-                println!("idx dx = {}", idx);
-                println!("Cells {:#?}", self.cells.len());
                 let cell = self.cells[idx];
                 let live_neighboors = self.live_neighboors_count(row, col);
-                println!("HERE");
 
                 let next_cell = match (cell, live_neighboors) {
                     (Cell::Alive, x) if x < 2 => Cell::Dead,
