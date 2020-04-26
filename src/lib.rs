@@ -1,10 +1,58 @@
 use wasm_bindgen::prelude::*;
+use wasm_bindgen::JsCast;
+use web_sys::{WebGlProgram, WebGlRenderingContext, WebGlShader};
 
-// When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
-// allocator.
-#[cfg(feature = "wee_alloc")]
-#[global_allocator]
-static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
+const CELL_SIZE: u32 = 5;
+
+pub fn get_canvas() -> Option<web_sys::HtmlCanvasElement> {
+    let document = web_sys::window()?.document()?;
+    let canvas = document.get_element_by_id("game-of-life-canvas")?;
+
+    canvas.dyn_into::<web_sys::HtmlCanvasElement>().ok()
+}
+
+pub fn setup_canvas(universe: &Universe, context: &str) -> Result<web_sys::CanvasRenderingContext2d, JsValue> {
+    let canvas = get_canvas().ok_or(JsValue::from_str("Failed getting canvas"))?;
+    canvas.set_width((CELL_SIZE + 1) * universe.width() + 1);
+    canvas.set_height((CELL_SIZE + 1) * universe.height() + 1);
+
+    let ctx = canvas.get_context(context)?.ok_or(JsValue::from_str("Failed getting ctx"))?;
+
+    ctx.dyn_into::<web_sys::CanvasRenderingContext2d>().map_err(|e| JsValue::from(e))
+}
+
+pub fn draw_grid(ctx: web_sys::CanvasRenderingContext2d, universe: &Universe) -> Result<(), JsValue> {
+    ctx.begin_path();
+    ctx.set_stroke_style(&JsValue::from_str("{\"color\": \"#FFFFFF\"}"));
+
+    let float_width = universe.width() as f64;
+    let float_height = universe.height() as f64;
+    let csf = CELL_SIZE as f64;
+
+    for i in 0..universe.width() + 1 {
+        let fi = i as f64;
+        ctx.move_to(fi * (csf + 1.) + 1., 0.);
+        ctx.line_to(fi * (csf + 1.) + 1., (csf + 1.) * float_height + 1.);
+    }
+
+    for j in 0..universe.height() + 1 {
+        let fj = j as f64;
+        ctx.move_to(0., fj * (csf + 1.) + 1.);
+        ctx.line_to((csf + 1.) * float_width + 1., fj * (csf + 1.) + 1.);
+    }
+
+    ctx.stroke();
+
+    Ok(())
+}
+
+#[wasm_bindgen(start)]
+pub fn start() -> Result<(), JsValue> {
+    let universe = Universe::new(64);
+    let ctx = setup_canvas(&universe, "2d")?;
+
+    draw_grid(ctx, &universe)
+}
 
 #[wasm_bindgen]
 #[repr(u8)]
