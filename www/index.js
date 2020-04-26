@@ -84,8 +84,6 @@ const renderLoop = (timestamp) => {
     lastCall = timestamp;
     cum += delta;
 
-    console.log(cum)
-
     let fps = document.getElementById("frames-per-second").value;
     if (cum > 1000 / fps) {
       const ticksPerFrame = document.getElementById("ticks-per-frame").value;
