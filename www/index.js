@@ -1,4 +1,6 @@
 import { Universe, Cell } from "wasm-game-of-life";
+import { memory } from "wasm-game-of-life/wasm_game_of_life_bg";
+
 const CELL_SIZE = 5;
 const GRID_COLOR = "#CCCCCC";
 const DEAD_COLOR = "#FFFFFF";
@@ -7,7 +9,6 @@ const ALIVE_COLOR = "#000000";
 const universe = Universe.new(64);
 const width = universe.width();
 const height = universe.height();
-
 
 const canvas = document.getElementById("game-of-life-canvas");
 canvas.width = (CELL_SIZE + 1) * width + 1;
@@ -29,7 +30,7 @@ canvas.addEventListener("click", event => {
 
 const ctx = canvas.getContext("2d");
 
-const drawGrid = () => {
+const drawGrid = (width, height, ctx) => {
     ctx.beginPath();
     ctx.strokeKey = GRID_COLOR;
 
@@ -46,20 +47,18 @@ const drawGrid = () => {
     ctx.stroke();
 }
 
-import { memory } from "wasm-game-of-life/wasm_game_of_life_bg";
-const getIndex = (row, col) => {
-    return row * width + col;
-}
-
-const drawCells = () => {
+const drawCells = (memory, universe, ctx) => {
+    const width = universe.width();
+    const height = universe.height();
     const cellsPtr = universe.cells();
+
     const cells = new Uint8Array(memory.buffer, cellsPtr, width * height);
 
     ctx.beginPath();
 
     for (let row = 0; row < height; row++) {
     for (let col = 0; col < width; col++) {
-      const idx = getIndex(row, col);
+      const idx = universe.get_index(row, col);
 
       ctx.fillStyle = cells[idx] === Cell.Dead
         ? DEAD_COLOR
@@ -80,12 +79,10 @@ const drawCells = () => {
 const renderLoop = () => {
     universe.tick();
 
-    drawGrid();
-    drawCells();
+    drawGrid(width, height, ctx);
+    drawCells(memory, universe, ctx);
 
     requestAnimationFrame(renderLoop);
 }
 
-drawGrid();
-drawCells();
-requestAnimationFrame(renderLoop);
+renderLoop()
