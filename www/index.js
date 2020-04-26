@@ -76,13 +76,28 @@ const drawCells = (memory, universe, ctx) => {
   ctx.stroke();
 }
 
-const renderLoop = () => {
-    universe.tick();
+let lastCall = 0;
+let cum = 0;
 
-    drawGrid(width, height, ctx);
-    drawCells(memory, universe, ctx);
+const renderLoop = (timestamp) => {
+    const delta = timestamp - lastCall;
+    lastCall = timestamp;
+    cum += delta;
+
+    console.log(cum)
+
+    let fps = document.getElementById("frames-per-second").value;
+    if (cum > 1000 / fps) {
+      const ticksPerFrame = document.getElementById("ticks-per-frame").value;
+      universe.tick_many(ticksPerFrame);
+
+      drawGrid(width, height, ctx);
+      drawCells(memory, universe, ctx);
+
+      cum = 0;
+    }
 
     requestAnimationFrame(renderLoop);
 }
 
-renderLoop()
+requestAnimationFrame(renderLoop);

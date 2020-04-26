@@ -61,6 +61,12 @@ impl Universe {
         self.cells[idx].toggle();
     }
 
+    pub fn tick_many(&mut self, steps: u32) {
+        for _ in 0..steps {
+            self.tick()
+        }
+    }
+
     pub fn tick(&mut self) {
         let mut next = self.cells.clone();
 
