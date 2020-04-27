@@ -155,24 +155,11 @@ impl Universe {
     }
 
     pub fn toggle_cell(&mut self, row: u32, col: u32) {
-        self.actions.push_back((row, col));
-    }
-
-    pub fn toggle_cells(&mut self) {
-        log!("Toggling cells");
-        for (row, col) in self.actions.iter() {
-            log!("Cell idx = {} {}", row, col);
-            let idx = self.get_index(*row, *col);
-            self.cells[idx] = match self.cells[idx] {
-                Cell::Alive => Cell::Dead,
-                Cell::Dead => Cell::Alive
-            }
-        }
-        self.actions = LinkedList::new();
+        let idx = self.get_index(row, col);
+        self.cells[idx].toggle();
     }
 
     pub fn tick_many(&mut self, steps: u32) {
-        self.toggle_cells();
         for _ in 0..steps {
             self.tick()
         }
