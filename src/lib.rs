@@ -51,9 +51,9 @@ pub fn draw_cells(ctx: &web_sys::CanvasRenderingContext2d, universe: &Universe) 
 
     ctx.begin_path();
 
-    for i in 0..universe.height() {
-        for j in 0..universe.width() {
-            let idx = universe.get_index(i, j);
+    for row in 0..universe.height() {
+        for col in 0..universe.width() {
+            let idx = universe.get_index(row, col);
 
             let stroke_style = match universe.cells[idx] {
                 Cell::Dead => "white",
@@ -61,7 +61,11 @@ pub fn draw_cells(ctx: &web_sys::CanvasRenderingContext2d, universe: &Universe) 
             };
 
             ctx.set_fill_style(&JsValue::from(stroke_style));
-            ctx.fill_rect((i as f64) * (fcs + 1.) + 1., (j as f64) * (fcs + 1.) + 1., fcs, fcs);
+            ctx.fill_rect(
+                (col as f64) * (fcs + 1.) + 1.,
+                (row as f64) * (fcs + 1.) + 1.,
+                fcs,
+                fcs);
         }
     }
 
