@@ -83,12 +83,12 @@ pub fn setup_canvas(universe: &Universe) -> Result<(), JsValue> {
 }
 
 #[wasm_bindgen]
-pub fn animation_loop(universe: &mut Universe) -> Result<(), JsValue> {
+pub fn animation_loop(universe: &mut Universe, ticks: u32) -> Result<(), JsValue> {
     // important bit here is that universe needs to be a reference
     // otherwise rust interop will destroy js value
     let ctx = get_ctx()?;
 
-    universe.tick();
+    universe.tick_many(ticks);
 
     draw_grid(&ctx, &universe)?;
     draw_cells(&ctx, &universe)?;
@@ -112,11 +112,14 @@ impl Cell {
     }
 }
 
+use std::collections::LinkedList;
+
 #[wasm_bindgen]
 pub struct Universe {
     width: u32,
     height: u32,
     cells: Vec<Cell>,
+    actions: LinkedList<(u32, u32)>,
 }
 
 impl Universe {
@@ -152,13 +155,24 @@ impl Universe {
     }
 
     pub fn toggle_cell(&mut self, row: u32, col: u32) {
-        let idx = self.get_index(row, col);
-        println!("idx = {}", idx);
-        log!("idx = {}", idx);
-        self.cells[idx].toggle();
+        self.actions.push_back((row, col));
+    }
+
+    pub fn toggle_cells(&mut self) {
+        log!("Toggling cells");
+        for (row, col) in self.actions.iter() {
+            log!("Cell idx = {} {}", row, col);
+            let idx = self.get_index(*row, *col);
+            self.cells[idx] = match self.cells[idx] {
+                Cell::Alive => Cell::Dead,
+                Cell::Dead => Cell::Alive
+            }
+        }
+        self.actions = LinkedList::new();
     }
 
     pub fn tick_many(&mut self, steps: u32) {
+        self.toggle_cells();
         for _ in 0..steps {
             self.tick()
         }
@@ -197,7 +211,7 @@ impl Universe {
                 else { Cell::Dead }
             }).collect();
 
-        Universe { width, height, cells }
+        Universe { width, height, cells, actions: LinkedList::new() }
     }
 
     pub fn render(&self) -> String { self.to_string() }
