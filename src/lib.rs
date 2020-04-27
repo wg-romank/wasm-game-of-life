@@ -11,14 +11,14 @@ pub fn get_canvas() -> Option<web_sys::HtmlCanvasElement> {
     canvas.dyn_into::<web_sys::HtmlCanvasElement>().ok()
 }
 
-pub fn setup_canvas(universe: &Universe, context: &str) -> Result<web_sys::CanvasRenderingContext2d, JsValue> {
-    let canvas = get_canvas().ok_or(JsValue::from_str("Failed getting canvas"))?;
-    canvas.set_width((CELL_SIZE + 1) * universe.width() + 1);
-    canvas.set_height((CELL_SIZE + 1) * universe.height() + 1);
+pub fn get_ctx() -> Result<web_sys::CanvasRenderingContext2d, JsValue> {
+    let ctx = get_canvas()
+        .ok_or(JsValue::from_str("Failed to get canvas"))?
+        .get_context("2d")?
+        .ok_or(JsValue::from_str("Failed getting ctx"))?;
 
-    let ctx = canvas.get_context(context)?.ok_or(JsValue::from_str("Failed getting ctx"))?;
-
-    ctx.dyn_into::<web_sys::CanvasRenderingContext2d>().map_err(|e| JsValue::from(e))
+    ctx.dyn_into::<web_sys::CanvasRenderingContext2d>()
+        .map_err(|e| JsValue::from(e))
 }
 
 pub fn draw_grid(ctx: &web_sys::CanvasRenderingContext2d, universe: &Universe) -> Result<(), JsValue> {
@@ -70,25 +70,23 @@ pub fn draw_cells(ctx: &web_sys::CanvasRenderingContext2d, universe: &Universe) 
     Ok(())
 }
 
-pub fn animation_loop(ctx: &web_sys::CanvasRenderingContext2d, mut universe: Universe) -> Result<Universe, JsValue> {
-    universe.tick();
-    draw_grid(&ctx, &universe)?;
-    draw_cells(&ctx, &universe)?;
-    Ok(universe)
+#[wasm_bindgen]
+pub fn setup_canvas(universe: &Universe) -> Result<(), JsValue> {
+    let canvas = get_canvas().ok_or(JsValue::from_str("Failed getting canvas"))?;
+    canvas.set_width((CELL_SIZE + 1) * universe.width() + 1);
+    canvas.set_height((CELL_SIZE + 1) * universe.height() + 1);
 
-    // web_sys::window()?.request_animation_frame(
-    //     || animation_loop(&ctx, &universe)
-    // )
+    Ok(())
 }
 
-#[wasm_bindgen(start)]
-pub fn start() -> Result<(), JsValue> {
-    let mut universe = Universe::new(64);
-    let ctx = setup_canvas(&universe, "2d")?;
+#[wasm_bindgen]
+pub fn animation_loop(universe: &mut Universe) -> Result<(), JsValue> {
+    let ctx = get_ctx()?;
 
-    for _ in 0..100 {
-        universe = animation_loop(&ctx, universe)?;
-    }
+    universe.tick();
+
+    draw_grid(&ctx, &universe)?;
+    draw_cells(&ctx, &universe)?;
 
     Ok(())
 }
