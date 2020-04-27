@@ -81,6 +81,8 @@ pub fn setup_canvas(universe: &Universe) -> Result<(), JsValue> {
 
 #[wasm_bindgen]
 pub fn animation_loop(universe: &mut Universe) -> Result<(), JsValue> {
+    // important bit here is that universe needs to be a reference
+    // otherwise rust interop will destroy js value
     let ctx = get_ctx()?;
 
     universe.tick();
