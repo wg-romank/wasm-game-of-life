@@ -112,14 +112,11 @@ impl Cell {
     }
 }
 
-use std::collections::LinkedList;
-
 #[wasm_bindgen]
 pub struct Universe {
     width: u32,
     height: u32,
     cells: Vec<Cell>,
-    actions: LinkedList<(u32, u32)>,
 }
 
 impl Universe {
@@ -198,7 +195,7 @@ impl Universe {
                 else { Cell::Dead }
             }).collect();
 
-        Universe { width, height, cells, actions: LinkedList::new() }
+        Universe { width, height, cells }
     }
 
     pub fn render(&self) -> String { self.to_string() }
