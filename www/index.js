@@ -11,7 +11,7 @@ const renderLoop = (timestamp) => {
     cum += delta;
 
     let fps = document.getElementById("frames-per-second").value;
-    if (cum > 1000) {
+    if (cum > 1000 / fps) {
       const ticksPerFrame = document.getElementById("ticks-per-frame").value;
       animation_loop(universe, ticksPerFrame);
       cum = 0;
