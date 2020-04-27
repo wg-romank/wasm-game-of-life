@@ -139,6 +139,12 @@ impl Universe {
     }
 }
 
+macro_rules! log {
+    ( $( $t:tt )* ) => {
+        web_sys::console::log_1(&format!( $( $t )* ).into());
+    }
+}
+
 #[wasm_bindgen]
 impl Universe {
     pub fn get_index(&self, row: u32, column: u32) -> usize {
@@ -147,6 +153,8 @@ impl Universe {
 
     pub fn toggle_cell(&mut self, row: u32, col: u32) {
         let idx = self.get_index(row, col);
+        println!("idx = {}", idx);
+        log!("idx = {}", idx);
         self.cells[idx].toggle();
     }
 
@@ -221,9 +229,9 @@ impl fmt::Display for Universe {
 fn unreachable_executed() {
     let mut universe = Universe::new(4);
 
-    for _ in 0..10 {
-        println!("{}", universe.to_string());
-        universe.tick();
-    }
     println!("{}", universe.to_string());
+    universe.toggle_cell(1, 1);
+    // universe.tick();
+    println!("{}", universe.to_string());
+    panic!("A")
 }
