@@ -1,6 +1,7 @@
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::{WebGlProgram, WebGlRenderingContext, WebGlShader};
+use std::collections::HashSet;
 
 const CELL_SIZE: u32 = 5;
 
@@ -46,27 +47,28 @@ pub fn draw_grid(ctx: &web_sys::CanvasRenderingContext2d, universe: &Universe) -
     Ok(())
 }
 
-pub fn draw_cells(ctx: &web_sys::CanvasRenderingContext2d, universe: &Universe) -> Result<(), JsValue> {
+pub fn draw_cells(
+    ctx: &web_sys::CanvasRenderingContext2d,
+    universe: &Universe,
+    changes: HashSet<(u32,u32)>) -> Result<(), JsValue> {
     let fcs = CELL_SIZE as f64;
 
     ctx.begin_path();
 
-    for row in 0..universe.height() {
-        for col in 0..universe.width() {
-            let idx = universe.get_index(row, col);
+    for (row, col) in changes {
+        let idx = universe.get_index(row, col);
 
-            let stroke_style = match universe.cells[idx] {
-                Cell::Dead => "white",
-                Cell::Alive => "black"
-            };
+        let stroke_style = match universe.cells[idx] {
+            Cell::Dead => "white",
+            Cell::Alive => "black"
+        };
 
-            ctx.set_fill_style(&JsValue::from(stroke_style));
-            ctx.fill_rect(
-                (col as f64) * (fcs + 1.) + 1.,
-                (row as f64) * (fcs + 1.) + 1.,
-                fcs,
-                fcs);
-        }
+        ctx.set_fill_style(&JsValue::from(stroke_style));
+        ctx.fill_rect(
+            (col as f64) * (fcs + 1.) + 1.,
+            (row as f64) * (fcs + 1.) + 1.,
+            fcs,
+            fcs);
     }
 
     ctx.stroke();
@@ -92,10 +94,10 @@ pub fn animation_loop(universe: &mut Universe, ticks: u32) -> Result<(), JsValue
     // otherwise rust interop will destroy js value
     let ctx = get_ctx()?;
 
-    universe.tick_many(ticks);
+    let changes = universe.tick_many(ticks);
 
+    draw_cells(&ctx, &universe, changes)?;
     draw_grid(&ctx, &universe)?;
-    draw_cells(&ctx, &universe)?;
 
     Ok(())
 }
@@ -141,33 +143,20 @@ impl Universe {
 
         count
     }
-}
 
-macro_rules! log {
-    ( $( $t:tt )* ) => {
-        web_sys::console::log_1(&format!( $( $t )* ).into());
-    }
-}
+    pub fn tick_many(&mut self, steps: u32) -> HashSet<(u32, u32)> {
+        let mut changes = HashSet::new();
 
-#[wasm_bindgen]
-impl Universe {
-    pub fn get_index(&self, row: u32, column: u32) -> usize {
-        (row * self.width + column) as usize
-    }
-
-    pub fn toggle_cell(&mut self, row: u32, col: u32) {
-        let idx = self.get_index(row, col);
-        self.cells[idx].toggle();
-    }
-
-    pub fn tick_many(&mut self, steps: u32) {
         for _ in 0..steps {
-            self.tick()
+            self.tick().into_iter().for_each(|e| { changes.insert(e); });
         }
+
+        changes
     }
 
-    pub fn tick(&mut self) {
+    pub fn tick(&mut self) -> Vec<(u32, u32)> {
         let mut next = self.cells.clone();
+        let mut res = vec![];
 
         for row in 0..self.height {
             for col in 0..self.width {
@@ -184,10 +173,36 @@ impl Universe {
                 };
 
                 next[idx] = next_cell;
+
+                if next[idx] != self.cells[idx] {
+                    res.push((row, col));
+                }
             }
         }
 
         self.cells = next;
+
+        res
+    }
+
+    pub fn get_index(&self, row: u32, column: u32) -> usize {
+        (row * self.width + column) as usize
+    }
+
+    pub fn render(&self) -> String { self.to_string() }
+}
+
+macro_rules! log {
+    ( $( $t:tt )* ) => {
+        web_sys::console::log_1(&format!( $( $t )* ).into());
+    }
+}
+
+#[wasm_bindgen]
+impl Universe {
+    pub fn toggle_cell(&mut self, row: u32, col: u32) {
+        let idx = self.get_index(row, col);
+        self.cells[idx].toggle();
     }
 
     pub fn new(size: u32) -> Universe {
@@ -202,13 +217,9 @@ impl Universe {
         Universe { width, height, cells }
     }
 
-    pub fn render(&self) -> String { self.to_string() }
-
     pub fn width(&self) -> u32 { self.width }
 
     pub fn height(&self) -> u32 { self.height }
-
-    pub fn cells(&self) -> *const Cell { self.cells.as_ptr() }
 }
 
 use std::fmt;
