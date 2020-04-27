@@ -21,9 +21,9 @@ pub fn setup_canvas(universe: &Universe, context: &str) -> Result<web_sys::Canva
     ctx.dyn_into::<web_sys::CanvasRenderingContext2d>().map_err(|e| JsValue::from(e))
 }
 
-pub fn draw_grid(ctx: web_sys::CanvasRenderingContext2d, universe: &Universe) -> Result<(), JsValue> {
+pub fn draw_grid(ctx: &web_sys::CanvasRenderingContext2d, universe: &Universe) -> Result<(), JsValue> {
     ctx.begin_path();
-    ctx.set_stroke_style(&JsValue::from_str("{\"color\": \"#FFFFFF\"}"));
+    ctx.set_stroke_style(&JsValue::from_str("gray"));
 
     let float_width = universe.width() as f64;
     let float_height = universe.height() as f64;
@@ -46,12 +46,51 @@ pub fn draw_grid(ctx: web_sys::CanvasRenderingContext2d, universe: &Universe) ->
     Ok(())
 }
 
+pub fn draw_cells(ctx: &web_sys::CanvasRenderingContext2d, universe: &Universe) -> Result<(), JsValue> {
+    let fcs = CELL_SIZE as f64;
+
+    ctx.begin_path();
+
+    for i in 0..universe.height() {
+        for j in 0..universe.width() {
+            let idx = universe.get_index(i, j);
+
+            let stroke_style = match universe.cells[idx] {
+                Cell::Dead => "white",
+                Cell::Alive => "black"
+            };
+
+            ctx.set_fill_style(&JsValue::from(stroke_style));
+            ctx.fill_rect((i as f64) * (fcs + 1.) + 1., (j as f64) * (fcs + 1.) + 1., fcs, fcs);
+        }
+    }
+
+    ctx.stroke();
+
+    Ok(())
+}
+
+pub fn animation_loop(ctx: &web_sys::CanvasRenderingContext2d, mut universe: Universe) -> Result<Universe, JsValue> {
+    universe.tick();
+    draw_grid(&ctx, &universe);
+    draw_cells(&ctx, &universe);
+
+    // web_sys::window()?.request_animation_frame(
+    //     || animation_loop(&ctx, &universe)
+    // )
+    Ok(universe)
+}
+
 #[wasm_bindgen(start)]
 pub fn start() -> Result<(), JsValue> {
-    let universe = Universe::new(64);
+    let mut universe = Universe::new(64);
     let ctx = setup_canvas(&universe, "2d")?;
 
-    draw_grid(ctx, &universe)
+    for _ in 0..100 {
+        universe = animation_loop(&ctx, universe)?;
+    }
+
+    Ok(())
 }
 
 #[wasm_bindgen]
