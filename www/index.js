@@ -1,25 +1,6 @@
-import { Universe, setup_canvas, animation_loop } from "wasm-game-of-life";
+import { Universe, setup_canvas, animation_loop, get_cell_size } from "wasm-game-of-life";
 
 const universe = Universe.new(64);
-const width = universe.width();
-const height = universe.height();
-
-const canvas = document.getElementById("game-of-life-canvas");
-
-canvas.addEventListener("click", event => {
-  const boundingRect = canvas.getBoundingClientRect();
-  const scaleX = canvas.width / boundingRect.width;
-  const scaleY = canvas.height / boundingRect.height;
-  
-  const canvasLeft = (event.clientX - boundingRect.left) * scaleX;
-  const canvasTop = (event.clientY - boundingRect.top) * scaleY;
-
-  const row = Math.min(Math.floor(canvasTop / (CELL_SIZE + 1)), height - 1);
-  const col = Math.min(Math.floor(canvasLeft / (CELL_SIZE + 1)), width - 1);
-
-  universe.toggle_cell(row, col);
-})
-
 
 let lastCall = 0;
 let cum = 0;
@@ -41,3 +22,23 @@ const renderLoop = (timestamp) => {
 
 setup_canvas(universe);
 requestAnimationFrame(renderLoop);
+
+const width = universe.width();
+const height = universe.height();
+
+const canvas = document.getElementById("game-of-life-canvas");
+const CELL_SIZE = get_cell_size();
+
+canvas.addEventListener("click", event => {
+  const boundingRect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / boundingRect.width;
+  const scaleY = canvas.height / boundingRect.height;
+
+  const canvasLeft = (event.clientX - boundingRect.left) * scaleX;
+  const canvasTop = (event.clientY - boundingRect.top) * scaleY;
+
+  const row = Math.min(Math.floor(canvasTop / (CELL_SIZE + 1)), height - 1);
+  const col = Math.min(Math.floor(canvasLeft / (CELL_SIZE + 1)), width - 1);
+
+  universe.toggle_cell(row, col);
+})

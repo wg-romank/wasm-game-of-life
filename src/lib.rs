@@ -71,6 +71,9 @@ pub fn draw_cells(ctx: &web_sys::CanvasRenderingContext2d, universe: &Universe) 
 }
 
 #[wasm_bindgen]
+pub fn get_cell_size() -> Result<u32, JsValue> { Ok(CELL_SIZE) }
+
+#[wasm_bindgen]
 pub fn setup_canvas(universe: &Universe) -> Result<(), JsValue> {
     let canvas = get_canvas().ok_or(JsValue::from_str("Failed getting canvas"))?;
     canvas.set_width((CELL_SIZE + 1) * universe.width() + 1);
@@ -93,7 +96,6 @@ pub fn animation_loop(universe: &mut Universe) -> Result<(), JsValue> {
     Ok(())
 }
 
-#[wasm_bindgen]
 #[repr(u8)]
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Cell {
