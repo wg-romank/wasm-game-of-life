@@ -72,13 +72,13 @@ pub fn draw_cells(ctx: &web_sys::CanvasRenderingContext2d, universe: &Universe) 
 
 pub fn animation_loop(ctx: &web_sys::CanvasRenderingContext2d, mut universe: Universe) -> Result<Universe, JsValue> {
     universe.tick();
-    draw_grid(&ctx, &universe);
-    draw_cells(&ctx, &universe);
+    draw_grid(&ctx, &universe)?;
+    draw_cells(&ctx, &universe)?;
+    Ok(universe)
 
     // web_sys::window()?.request_animation_frame(
     //     || animation_loop(&ctx, &universe)
     // )
-    Ok(universe)
 }
 
 #[wasm_bindgen(start)]
