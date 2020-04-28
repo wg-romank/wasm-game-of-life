@@ -7,24 +7,24 @@ mod universe;
 
 const CELL_SIZE: u32 = 5;
 
-pub fn get_canvas() -> Option<web_sys::HtmlCanvasElement> {
+fn get_canvas() -> Option<web_sys::HtmlCanvasElement> {
     let document = web_sys::window()?.document()?;
     let canvas = document.get_element_by_id("game-of-life-canvas")?;
 
     canvas.dyn_into::<web_sys::HtmlCanvasElement>().ok()
 }
 
-pub fn get_ctx() -> Result<web_sys::CanvasRenderingContext2d, JsValue> {
+fn get_ctx<T : JsCast>(ctx_name: &str) -> Result<T, JsValue> {
     let ctx = get_canvas()
         .ok_or(JsValue::from_str("Failed to get canvas"))?
-        .get_context("2d")?
+        .get_context(ctx_name)?
         .ok_or(JsValue::from_str("Failed getting ctx"))?;
 
-    ctx.dyn_into::<web_sys::CanvasRenderingContext2d>()
+    ctx.dyn_into::<T>()
         .map_err(|e| JsValue::from(e))
 }
 
-pub fn draw_grid(ctx: &web_sys::CanvasRenderingContext2d, universe: &universe::Universe) -> Result<(), JsValue> {
+fn draw_grid(ctx: &web_sys::CanvasRenderingContext2d, universe: &universe::Universe) -> Result<(), JsValue> {
     ctx.begin_path();
     ctx.set_stroke_style(&JsValue::from_str("gray"));
 
@@ -49,7 +49,7 @@ pub fn draw_grid(ctx: &web_sys::CanvasRenderingContext2d, universe: &universe::U
     Ok(())
 }
 
-pub fn draw_cells(
+fn draw_cells(
     ctx: &web_sys::CanvasRenderingContext2d,
     universe: &universe::Universe,
     changes: HashSet<(u32,u32)>) -> Result<(), JsValue> {
@@ -94,7 +94,7 @@ pub fn setup_canvas(universe: &universe::Universe) -> Result<(), JsValue> {
 pub fn animation_loop(universe: &mut universe::Universe, ticks: u32) -> Result<(), JsValue> {
     // important bit here is that universe needs to be a reference
     // otherwise rust interop will destroy js value
-    let ctx = get_ctx()?;
+    let ctx = get_ctx("2d")?;
 
     let changes = universe.tick_many(ticks);
 
@@ -102,4 +102,117 @@ pub fn animation_loop(universe: &mut universe::Universe, ticks: u32) -> Result<(
     draw_grid(&ctx, &universe)?;
 
     Ok(())
+}
+
+#[wasm_bindgen]
+pub fn animation_webgl() -> Result<(), JsValue> {
+    let context = get_ctx("webgl")?;
+
+    let vert_shader = compile_shader(
+        &context,
+        WebGlRenderingContext::VERTEX_SHADER,
+        r#"
+        attribute vec4 position;
+        void main() {
+            gl_Position = position;
+        }
+    "#,
+    )?;
+    let frag_shader = compile_shader(
+        &context,
+        WebGlRenderingContext::FRAGMENT_SHADER,
+        r#"
+        void main() {
+            gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+        }
+    "#,
+    )?;
+    let program = link_program(&context, &vert_shader, &frag_shader)?;
+    context.use_program(Some(&program));
+
+    let vertices: [f32; 9] = [-0.7, -0.7, 0.0, 0.7, -0.7, 0.0, 0.0, 0.7, 0.0];
+
+    let buffer = context.create_buffer().ok_or("failed to create buffer")?;
+    context.bind_buffer(WebGlRenderingContext::ARRAY_BUFFER, Some(&buffer));
+
+    // Note that `Float32Array::view` is somewhat dangerous (hence the
+    // `unsafe`!). This is creating a raw view into our module's
+    // `WebAssembly.Memory` buffer, but if we allocate more pages for ourself
+    // (aka do a memory allocation in Rust) it'll cause the buffer to change,
+    // causing the `Float32Array` to be invalid.
+    //
+    // As a result, after `Float32Array::view` we have to be very careful not to
+    // do any memory allocations before it's dropped.
+    unsafe {
+        let vert_array = js_sys::Float32Array::view(&vertices);
+
+        context.buffer_data_with_array_buffer_view(
+            WebGlRenderingContext::ARRAY_BUFFER,
+            &vert_array,
+            WebGlRenderingContext::STATIC_DRAW,
+        );
+    }
+
+    context.vertex_attrib_pointer_with_i32(0, 3, WebGlRenderingContext::FLOAT, false, 0, 0);
+    context.enable_vertex_attrib_array(0);
+
+    context.clear_color(0.0, 0.0, 0.0, 1.0);
+    context.clear(WebGlRenderingContext::COLOR_BUFFER_BIT);
+
+    context.draw_arrays(
+        WebGlRenderingContext::TRIANGLES,
+        0,
+        (vertices.len() / 3) as i32,
+    );
+    Ok(())
+}
+
+fn compile_shader(
+    context: &WebGlRenderingContext,
+    shader_type: u32,
+    source: &str,
+) -> Result<WebGlShader, String> {
+    let shader = context
+        .create_shader(shader_type)
+        .ok_or_else(|| String::from("Unable to create shader object"))?;
+    context.shader_source(&shader, source);
+    context.compile_shader(&shader);
+
+    if context
+        .get_shader_parameter(&shader, WebGlRenderingContext::COMPILE_STATUS)
+        .as_bool()
+        .unwrap_or(false)
+    {
+        Ok(shader)
+    } else {
+        Err(context
+            .get_shader_info_log(&shader)
+            .unwrap_or_else(|| String::from("Unknown error creating shader")))
+    }
+}
+
+fn link_program(
+    context: &WebGlRenderingContext,
+    vert_shader: &WebGlShader,
+    frag_shader: &WebGlShader,
+) -> Result<WebGlProgram, String> {
+    let program = context
+        .create_program()
+        .ok_or_else(|| String::from("Unable to create shader object"))?;
+
+    context.attach_shader(&program, vert_shader);
+    context.attach_shader(&program, frag_shader);
+    context.link_program(&program);
+
+    if context
+        .get_program_parameter(&program, WebGlRenderingContext::LINK_STATUS)
+        .as_bool()
+        .unwrap_or(false)
+    {
+        Ok(program)
+    } else {
+        Err(context
+            .get_program_info_log(&program)
+            .unwrap_or_else(|| String::from("Unknown error creating program object")))
+    }
 }
