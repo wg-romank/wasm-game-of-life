@@ -149,15 +149,40 @@ fn setup_shaders() -> Result<web_sys::WebGlRenderingContext, JsValue> {
     Ok(context)
 }
 
+fn compute_draw_cells_webgl(universe: &universe::Universe, changes: HashSet<(u32, u32)>) -> Vec<f32> {
+    let mut vertexes = Vec::new();
+    let fcs = CELL_SIZE as f32;
+
+    for (row, col) in changes {
+        let idx = universe.get_index(row, col);
+
+        let scaled = |idx: u32| { (idx as f32) * (fcs + 1.) + 1. };
+
+        let v0 = vec![
+            scaled(col), scaled(row),
+            scaled(col) + fcs, scaled(row),
+            scaled(col) + fcs, scaled(row) + fcs,
+            scaled(col), scaled(row) + fcs
+        ];
+
+        v0.into_iter().for_each(|v| vertexes.push(v));
+    }
+
+    vertexes
+}
+
 #[wasm_bindgen]
-pub fn animation_webgl() -> Result<(), JsValue> {
+pub fn animation_webgl(universe: &mut universe::Universe) -> Result<(), JsValue> {
     let context = setup_shaders()?;
 
-    let vertices = vec![
-        0., 0.,
-        100., 0.,
-        100., 100.,
-        0., 100.];
+    let changes = universe.tick_many(1);
+    let vertices = compute_draw_cells_webgl(&universe, changes);
+
+    // let vertices = vec![
+    //     0., 0.,
+    //     100., 0.,
+    //     100., 100.,
+    //     0., 100.];
 
     let buffer = context.create_buffer().ok_or("failed to create buffer")?;
     context.bind_buffer(WebGlRenderingContext::ARRAY_BUFFER, Some(&buffer));
@@ -193,11 +218,14 @@ pub fn animation_webgl() -> Result<(), JsValue> {
     context.clear_color(0.0, 0.0, 0.0, 1.0);
     context.clear(WebGlRenderingContext::COLOR_BUFFER_BIT);
 
-    context.draw_arrays(
-        WebGlRenderingContext::TRIANGLES,
-        0,
-        (vertices.len() / 2) as i32,
-    );
+    for c in (0..vertices.len()).step_by(8) {
+        context.draw_arrays(
+            WebGlRenderingContext::TRIANGLE_FAN,
+            c as i32,
+            (8 / 2) as i32,
+        );
+
+    }
     Ok(())
 }
 

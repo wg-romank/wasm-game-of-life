@@ -13,7 +13,8 @@ const renderLoop = (timestamp) => {
     let fps = document.getElementById("frames-per-second").value;
     if (cum > 1000 / fps) {
       const ticksPerFrame = document.getElementById("ticks-per-frame").value;
-      animation_loop(universe, ticksPerFrame);
+      // animation_loop(universe, ticksPerFrame);
+      animation_webgl(universe);
       cum = 0;
     }
 
@@ -21,8 +22,8 @@ const renderLoop = (timestamp) => {
 }
 
 setup_canvas(universe);
-animation_webgl();
-// requestAnimationFrame(renderLoop);
+// animation_webgl(universe);
+requestAnimationFrame(renderLoop);
 
 const width = universe.width();
 const height = universe.height();
