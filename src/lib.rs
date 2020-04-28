@@ -105,6 +105,7 @@ pub fn animation_loop(universe: &mut universe::Universe, ticks: u32) -> Result<(
 }
 
 fn setup_shaders() -> Result<web_sys::WebGlRenderingContext, JsValue> {
+    let canvas = get_canvas().ok_or(JsValue::from_str("Failed to get canvas"))?;
     let context = get_ctx("webgl")?;
 
     let vert_shader = compile_shader(
@@ -112,10 +113,15 @@ fn setup_shaders() -> Result<web_sys::WebGlRenderingContext, JsValue> {
         WebGlRenderingContext::VERTEX_SHADER,
         r#"
         precision highp float;
-        uniform float uCol;
-        attribute vec4 position;
+
+        attribute vec2 position;
+
+        uniform vec2 canvasSize;
+
         void main() {
-            gl_Position = position;
+            vec2 zeroOne = position / canvasSize;
+            vec2 clipSpace = zeroOne * 2.0 - 1.0;
+            gl_Position = vec4(clipSpace * vec2(1, -1), 0, 1);
         }
     "#,
     )?;
@@ -124,22 +130,21 @@ fn setup_shaders() -> Result<web_sys::WebGlRenderingContext, JsValue> {
         WebGlRenderingContext::FRAGMENT_SHADER,
         r#"
         precision highp float;
-        uniform float uCol;
         void main() {
-            gl_FragColor = vec4(uCol * 1.0, 1.0, 1.0, 1.0);
+            gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
         }
     "#,
     )?;
     let program = link_program(&context, &vert_shader, &frag_shader)?;
     context.use_program(Some(&program));
 
-    let u_color = context.get_uniform_location(&program, "uCol")
+    let canvas_size = context.get_uniform_location(&program, "canvasSize")
         .ok_or(JsValue::from(
             format!("Failed to get uniform uCol: {}", context.get_error())
         )
         )?;
 
-    context.uniform1f(Some(&u_color), 0.5);
+    context.uniform2f(Some(&canvas_size), canvas.width() as f32, canvas.height() as f32);
 
     Ok(context)
 }
@@ -148,7 +153,11 @@ fn setup_shaders() -> Result<web_sys::WebGlRenderingContext, JsValue> {
 pub fn animation_webgl() -> Result<(), JsValue> {
     let context = setup_shaders()?;
 
-    let vertices: [f32; 9] = [-0.7, -0.7, 0.0, 0.7, -0.7, 0.0, 0.0, 0.7, 0.0];
+    let vertices = vec![
+        0., 0.,
+        100., 0.,
+        100., 100.,
+        0., 100.];
 
     let buffer = context.create_buffer().ok_or("failed to create buffer")?;
     context.bind_buffer(WebGlRenderingContext::ARRAY_BUFFER, Some(&buffer));
@@ -171,7 +180,14 @@ pub fn animation_webgl() -> Result<(), JsValue> {
         );
     }
 
-    context.vertex_attrib_pointer_with_i32(0, 3, WebGlRenderingContext::FLOAT, false, 0, 0);
+    context.vertex_attrib_pointer_with_i32(
+        0,
+        2,
+        WebGlRenderingContext::FLOAT,
+        false,
+        0,
+        0);
+
     context.enable_vertex_attrib_array(0);
 
     context.clear_color(0.0, 0.0, 0.0, 1.0);
@@ -180,7 +196,7 @@ pub fn animation_webgl() -> Result<(), JsValue> {
     context.draw_arrays(
         WebGlRenderingContext::TRIANGLES,
         0,
-        (vertices.len() / 3) as i32,
+        (vertices.len() / 2) as i32,
     );
     Ok(())
 }
