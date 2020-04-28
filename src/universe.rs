@@ -24,6 +24,7 @@ pub struct Universe {
     width: u32,
     height: u32,
     cells: Vec<Cell>,
+    alive: HashSet<(u32, u32)>
 }
 
 impl Universe {
@@ -45,19 +46,14 @@ impl Universe {
         count
     }
 
-    pub fn tick_many(&mut self, steps: u32) -> HashSet<(u32, u32)> {
-        let mut changes = HashSet::new();
-
+    pub fn tick_many(&mut self, steps: u32) {
         for _ in 0..steps {
-            self.tick().into_iter().for_each(|e| { changes.insert(e); });
+            self.tick();
         }
-
-        changes
     }
 
-    pub fn tick(&mut self) -> Vec<(u32, u32)> {
+    pub fn tick(&mut self) {
         let mut next = self.cells.clone();
-        let mut res = vec![];
 
         for row in 0..self.height {
             for col in 0..self.width {
@@ -73,17 +69,18 @@ impl Universe {
                     (otherwise, _) => otherwise
                 };
 
-                next[idx] = next_cell;
-
-                if next[idx] != self.cells[idx] {
-                    res.push((row, col));
+                if next_cell != self.cells[idx] {
+                    match next_cell {
+                        Cell::Alive => self.alive.insert((row, col)),
+                        Cell::Dead => self.alive.remove(&(row, col)),
+                    };
                 }
+
+                next[idx] = next_cell;
             }
         }
 
         self.cells = next;
-
-        res
     }
 
     pub fn get_index(&self, row: u32, column: u32) -> usize {
@@ -93,6 +90,8 @@ impl Universe {
     pub fn render(&self) -> String { self.to_string() }
 
     pub fn cell(&self, idx: usize) -> Cell { self.cells[idx] }
+
+    pub fn alive_cells(&self) -> &HashSet<(u32, u32)> { &self.alive }
 }
 
 
@@ -118,7 +117,7 @@ impl Universe {
                 else { Cell::Dead }
             }).collect();
 
-        Universe { width, height, cells }
+        Universe { width, height, cells, alive: HashSet::new() }
     }
 
     pub fn width(&self) -> u32 { self.width }

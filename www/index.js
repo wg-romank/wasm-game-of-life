@@ -1,4 +1,4 @@
-import { Universe, setup_canvas, animation_loop, get_cell_size, animation_webgl } from "wasm-game-of-life";
+import { Universe, setup_canvas, get_cell_size, animation_webgl } from "wasm-game-of-life";
 
 const universe = Universe.new(64);
 
@@ -22,7 +22,6 @@ const renderLoop = (timestamp) => {
 }
 
 setup_canvas(universe);
-// animation_webgl(universe);
 requestAnimationFrame(renderLoop);
 
 const width = universe.width();

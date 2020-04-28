@@ -24,60 +24,6 @@ fn get_ctx<T : JsCast>(ctx_name: &str) -> Result<T, JsValue> {
         .map_err(|e| JsValue::from(e))
 }
 
-fn draw_grid(ctx: &web_sys::CanvasRenderingContext2d, universe: &universe::Universe) -> Result<(), JsValue> {
-    ctx.begin_path();
-    ctx.set_stroke_style(&JsValue::from_str("gray"));
-
-    let float_width = universe.width() as f64;
-    let float_height = universe.height() as f64;
-    let csf = CELL_SIZE as f64;
-
-    for i in 0..universe.width() + 1 {
-        let fi = i as f64;
-        ctx.move_to(fi * (csf + 1.) + 1., 0.);
-        ctx.line_to(fi * (csf + 1.) + 1., (csf + 1.) * float_height + 1.);
-    }
-
-    for j in 0..universe.height() + 1 {
-        let fj = j as f64;
-        ctx.move_to(0., fj * (csf + 1.) + 1.);
-        ctx.line_to((csf + 1.) * float_width + 1., fj * (csf + 1.) + 1.);
-    }
-
-    ctx.stroke();
-
-    Ok(())
-}
-
-fn draw_cells(
-    ctx: &web_sys::CanvasRenderingContext2d,
-    universe: &universe::Universe,
-    changes: HashSet<(u32,u32)>) -> Result<(), JsValue> {
-    let fcs = CELL_SIZE as f64;
-
-    ctx.begin_path();
-
-    for (row, col) in changes {
-        let idx = universe.get_index(row, col);
-
-        let stroke_style = match universe.cell(idx) {
-            universe::Cell::Dead => "white",
-            universe::Cell::Alive => "black"
-        };
-
-        ctx.set_fill_style(&JsValue::from(stroke_style));
-        ctx.fill_rect(
-            (col as f64) * (fcs + 1.) + 1.,
-            (row as f64) * (fcs + 1.) + 1.,
-            fcs,
-            fcs);
-    }
-
-    ctx.stroke();
-
-    Ok(())
-}
-
 #[wasm_bindgen]
 pub fn get_cell_size() -> Result<u32, JsValue> { Ok(CELL_SIZE) }
 
@@ -86,20 +32,6 @@ pub fn setup_canvas(universe: &universe::Universe) -> Result<(), JsValue> {
     let canvas = get_canvas().ok_or(JsValue::from_str("Failed getting canvas"))?;
     canvas.set_width((CELL_SIZE + 1) * universe.width() + 1);
     canvas.set_height((CELL_SIZE + 1) * universe.height() + 1);
-
-    Ok(())
-}
-
-#[wasm_bindgen]
-pub fn animation_loop(universe: &mut universe::Universe, ticks: u32) -> Result<(), JsValue> {
-    // important bit here is that universe needs to be a reference
-    // otherwise rust interop will destroy js value
-    let ctx = get_ctx("2d")?;
-
-    let changes = universe.tick_many(ticks);
-
-    draw_cells(&ctx, &universe, changes)?;
-    draw_grid(&ctx, &universe)?;
 
     Ok(())
 }
@@ -149,20 +81,20 @@ fn setup_shaders() -> Result<web_sys::WebGlRenderingContext, JsValue> {
     Ok(context)
 }
 
-fn compute_draw_cells_webgl(universe: &universe::Universe, changes: HashSet<(u32, u32)>) -> Vec<f32> {
+fn compute_draw_cells_webgl(universe: &universe::Universe, changes: &HashSet<(u32, u32)>) -> Vec<f32> {
     let mut vertexes = Vec::new();
     let fcs = CELL_SIZE as f32;
 
     for (row, col) in changes {
-        let idx = universe.get_index(row, col);
+        let idx = universe.get_index(*row, *col);
 
         let scaled = |idx: u32| { (idx as f32) * (fcs + 1.) + 1. };
 
         let v0 = vec![
-            scaled(col), scaled(row),
-            scaled(col) + fcs, scaled(row),
-            scaled(col) + fcs, scaled(row) + fcs,
-            scaled(col), scaled(row) + fcs
+            scaled(*col), scaled(*row),
+            scaled(*col) + fcs, scaled(*row),
+            scaled(*col) + fcs, scaled(*row) + fcs,
+            scaled(*col), scaled(*row) + fcs
         ];
 
         v0.into_iter().for_each(|v| vertexes.push(v));
@@ -175,8 +107,8 @@ fn compute_draw_cells_webgl(universe: &universe::Universe, changes: HashSet<(u32
 pub fn animation_webgl(universe: &mut universe::Universe) -> Result<(), JsValue> {
     let context = setup_shaders()?;
 
-    let changes = universe.tick_many(1);
-    let vertices = compute_draw_cells_webgl(&universe, changes);
+    universe.tick_many(1);
+    let vertices = compute_draw_cells_webgl(&universe, universe.alive_cells());
 
     // let vertices = vec![
     //     0., 0.,
