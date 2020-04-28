@@ -23,6 +23,7 @@ features = [
   'CanvasRenderingContext2d',
   'WebGlProgram',
   'WebGlShader',
+  'WebGlUniformLocation',
   'Window',
 ]
 

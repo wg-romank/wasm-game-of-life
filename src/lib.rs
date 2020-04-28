@@ -104,14 +104,15 @@ pub fn animation_loop(universe: &mut universe::Universe, ticks: u32) -> Result<(
     Ok(())
 }
 
-#[wasm_bindgen]
-pub fn animation_webgl() -> Result<(), JsValue> {
+fn setup_shaders() -> Result<web_sys::WebGlRenderingContext, JsValue> {
     let context = get_ctx("webgl")?;
 
     let vert_shader = compile_shader(
         &context,
         WebGlRenderingContext::VERTEX_SHADER,
         r#"
+        precision highp float;
+        uniform float uCol;
         attribute vec4 position;
         void main() {
             gl_Position = position;
@@ -122,13 +123,30 @@ pub fn animation_webgl() -> Result<(), JsValue> {
         &context,
         WebGlRenderingContext::FRAGMENT_SHADER,
         r#"
+        precision highp float;
+        uniform float uCol;
         void main() {
-            gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+            gl_FragColor = vec4(uCol * 1.0, 1.0, 1.0, 1.0);
         }
     "#,
     )?;
     let program = link_program(&context, &vert_shader, &frag_shader)?;
     context.use_program(Some(&program));
+
+    let u_color = context.get_uniform_location(&program, "uCol")
+        .ok_or(JsValue::from(
+            format!("Failed to get uniform uCol: {}", context.get_error())
+        )
+        )?;
+
+    context.uniform1f(Some(&u_color), 0.5);
+
+    Ok(context)
+}
+
+#[wasm_bindgen]
+pub fn animation_webgl() -> Result<(), JsValue> {
+    let context = setup_shaders()?;
 
     let vertices: [f32; 9] = [-0.7, -0.7, 0.0, 0.7, -0.7, 0.0, 0.0, 0.7, 0.0];
 
