@@ -110,12 +110,6 @@ pub fn animation_webgl(universe: &mut universe::Universe) -> Result<(), JsValue>
     universe.tick_many(1);
     let vertices = compute_draw_cells_webgl(&universe, universe.alive_cells());
 
-    // let vertices = vec![
-    //     0., 0.,
-    //     100., 0.,
-    //     100., 100.,
-    //     0., 100.];
-
     let buffer = context.create_buffer().ok_or("failed to create buffer")?;
     context.bind_buffer(WebGlRenderingContext::ARRAY_BUFFER, Some(&buffer));
 
