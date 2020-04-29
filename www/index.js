@@ -1,4 +1,4 @@
-import { Universe, setup_canvas, get_cell_size, animation_webgl } from "wasm-game-of-life";
+import { Universe, setup_canvas, get_cell_size, animation_webgl, setup_webgl } from "wasm-game-of-life";
 
 const universe = Universe.new(64);
 
@@ -13,8 +13,7 @@ const renderLoop = (timestamp) => {
     let fps = document.getElementById("frames-per-second").value;
     if (cum > 1000 / fps) {
       const ticksPerFrame = document.getElementById("ticks-per-frame").value;
-      // animation_loop(universe, ticksPerFrame);
-      animation_webgl(universe);
+      animation_webgl(universe, ticksPerFrame);
       cum = 0;
     }
 
@@ -22,6 +21,7 @@ const renderLoop = (timestamp) => {
 }
 
 setup_canvas(universe);
+setup_webgl();
 requestAnimationFrame(renderLoop);
 
 const width = universe.width();

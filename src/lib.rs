@@ -81,13 +81,11 @@ fn setup_shaders() -> Result<web_sys::WebGlRenderingContext, JsValue> {
     Ok(context)
 }
 
-fn compute_draw_cells_webgl(universe: &universe::Universe, changes: &HashSet<(u32, u32)>) -> Vec<f32> {
+fn compute_draw_cells_webgl(changes: &HashSet<(u32, u32)>) -> Vec<f32> {
     let mut vertexes = Vec::new();
     let fcs = CELL_SIZE as f32;
 
     for (row, col) in changes {
-        let idx = universe.get_index(*row, *col);
-
         let scaled = |idx: u32| { (idx as f32) * (fcs + 1.) + 1. };
 
         let v0 = vec![
@@ -104,11 +102,17 @@ fn compute_draw_cells_webgl(universe: &universe::Universe, changes: &HashSet<(u3
 }
 
 #[wasm_bindgen]
-pub fn animation_webgl(universe: &mut universe::Universe) -> Result<(), JsValue> {
-    let context = setup_shaders()?;
+pub fn setup_webgl() -> Result<(), JsValue> {
+    setup_shaders()?;
 
-    universe.tick_many(1);
-    let vertices = compute_draw_cells_webgl(&universe, universe.alive_cells());
+    Ok(())
+}
+
+#[wasm_bindgen]
+pub fn animation_webgl(universe: &mut universe::Universe, ticks: u32) -> Result<(), JsValue> {
+    let context: WebGlRenderingContext = get_ctx("webgl")?;
+    universe.tick_many(ticks);
+    let vertices = compute_draw_cells_webgl(universe.alive_cells());
 
     let buffer = context.create_buffer().ok_or("failed to create buffer")?;
     context.bind_buffer(WebGlRenderingContext::ARRAY_BUFFER, Some(&buffer));
