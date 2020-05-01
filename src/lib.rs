@@ -1,6 +1,6 @@
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
-use web_sys::{WebGlProgram, WebGlRenderingContext, WebGlShader};
+use web_sys::{WebGlProgram, WebGlRenderingContext as WebGl, WebGlShader};
 use std::collections::HashSet;
 
 mod universe;
@@ -36,13 +36,13 @@ pub fn setup_canvas(universe: &universe::Universe) -> Result<(), JsValue> {
     Ok(())
 }
 
-fn setup_shaders() -> Result<web_sys::WebGlRenderingContext, JsValue> {
+fn setup_shaders() -> Result<WebGl, JsValue> {
     let canvas = get_canvas().ok_or(JsValue::from_str("Failed to get canvas"))?;
-    let context = get_ctx("webgl")?;
+    let context: WebGl = get_ctx("webgl")?;
 
     let vert_shader = compile_shader(
         &context,
-        WebGlRenderingContext::VERTEX_SHADER,
+        WebGl::VERTEX_SHADER,
         r#"
         precision highp float;
 
@@ -59,7 +59,7 @@ fn setup_shaders() -> Result<web_sys::WebGlRenderingContext, JsValue> {
     )?;
     let frag_shader = compile_shader(
         &context,
-        WebGlRenderingContext::FRAGMENT_SHADER,
+        WebGl::FRAGMENT_SHADER,
         r#"
         precision highp float;
         void main() {
@@ -110,12 +110,12 @@ pub fn setup_webgl() -> Result<(), JsValue> {
 
 #[wasm_bindgen]
 pub fn animation_webgl(universe: &mut universe::Universe, ticks: u32) -> Result<(), JsValue> {
-    let context: WebGlRenderingContext = get_ctx("webgl")?;
+    let context: WebGl = get_ctx("webgl")?;
     universe.tick_many(ticks);
     let vertices = compute_draw_cells_webgl(universe.alive_cells());
 
     let buffer = context.create_buffer().ok_or("failed to create buffer")?;
-    context.bind_buffer(WebGlRenderingContext::ARRAY_BUFFER, Some(&buffer));
+    context.bind_buffer(WebGl::ARRAY_BUFFER, Some(&buffer));
 
     // Note that `Float32Array::view` is somewhat dangerous (hence the
     // `unsafe`!). This is creating a raw view into our module's
@@ -129,16 +129,16 @@ pub fn animation_webgl(universe: &mut universe::Universe, ticks: u32) -> Result<
         let vert_array = js_sys::Float32Array::view(&vertices);
 
         context.buffer_data_with_array_buffer_view(
-            WebGlRenderingContext::ARRAY_BUFFER,
+            WebGl::ARRAY_BUFFER,
             &vert_array,
-            WebGlRenderingContext::STATIC_DRAW,
+            WebGl::STATIC_DRAW,
         );
     }
 
     context.vertex_attrib_pointer_with_i32(
         0,
         2,
-        WebGlRenderingContext::FLOAT,
+        WebGl::FLOAT,
         false,
         0,
         0);
@@ -146,11 +146,11 @@ pub fn animation_webgl(universe: &mut universe::Universe, ticks: u32) -> Result<
     context.enable_vertex_attrib_array(0);
 
     context.clear_color(0.0, 0.0, 0.0, 1.0);
-    context.clear(WebGlRenderingContext::COLOR_BUFFER_BIT);
+    context.clear(WebGl::COLOR_BUFFER_BIT);
 
     for c in (0..vertices.len()).step_by(8) {
         context.draw_arrays(
-            WebGlRenderingContext::TRIANGLE_FAN,
+            WebGl::TRIANGLE_FAN,
             c as i32,
             (8 / 2) as i32,
         );
@@ -160,7 +160,7 @@ pub fn animation_webgl(universe: &mut universe::Universe, ticks: u32) -> Result<
 }
 
 fn compile_shader(
-    context: &WebGlRenderingContext,
+    context: &WebGl,
     shader_type: u32,
     source: &str,
 ) -> Result<WebGlShader, String> {
@@ -171,7 +171,7 @@ fn compile_shader(
     context.compile_shader(&shader);
 
     if context
-        .get_shader_parameter(&shader, WebGlRenderingContext::COMPILE_STATUS)
+        .get_shader_parameter(&shader, WebGl::COMPILE_STATUS)
         .as_bool()
         .unwrap_or(false)
     {
@@ -184,7 +184,7 @@ fn compile_shader(
 }
 
 fn link_program(
-    context: &WebGlRenderingContext,
+    context: &WebGl,
     vert_shader: &WebGlShader,
     frag_shader: &WebGlShader,
 ) -> Result<WebGlProgram, String> {
@@ -197,7 +197,7 @@ fn link_program(
     context.link_program(&program);
 
     if context
-        .get_program_parameter(&program, WebGlRenderingContext::LINK_STATUS)
+        .get_program_parameter(&program, WebGl::LINK_STATUS)
         .as_bool()
         .unwrap_or(false)
     {
