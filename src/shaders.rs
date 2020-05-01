@@ -115,7 +115,7 @@ pub fn setup_shaders() -> Result<WebGl, JsValue> {
     Ok(context)
 }
 
-pub fn render_pipeline(vertices: &Vec<f32>) -> Result<(), JsValue> {
+pub fn render_pipeline(vertices: &[f32]) -> Result<(), JsValue> {
     let context: WebGl = get_ctx("webgl")?;
 
     let buffer = context.create_buffer().ok_or("failed to create buffer")?;
