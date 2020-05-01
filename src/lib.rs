@@ -21,6 +21,13 @@ pub fn setup_canvas(universe: &universe::Universe) -> Result<(), JsValue> {
     Ok(())
 }
 
+#[wasm_bindgen]
+pub fn setup_webgl() -> Result<(), JsValue> {
+    shaders::setup_shaders()?;
+
+    Ok(())
+}
+
 fn compute_draw_cells_webgl(changes: &HashSet<(u32, u32)>) -> Vec<f32> {
     let mut vertexes = Vec::new();
     let fcs = CELL_SIZE as f32;
@@ -39,13 +46,6 @@ fn compute_draw_cells_webgl(changes: &HashSet<(u32, u32)>) -> Vec<f32> {
     }
 
     vertexes
-}
-
-#[wasm_bindgen]
-pub fn setup_webgl() -> Result<(), JsValue> {
-    shaders::setup_shaders()?;
-
-    Ok(())
 }
 
 #[wasm_bindgen]
