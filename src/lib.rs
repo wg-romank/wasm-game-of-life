@@ -85,14 +85,14 @@ fn compute_draw_cells_webgl(changes: &HashSet<(u32, u32)>) -> Vec<f32> {
     let mut vertexes = Vec::new();
     let fcs = CELL_SIZE as f32;
 
-    for (row, col) in changes {
+    for &(row, col) in changes {
         let scaled = |idx: u32| { (idx as f32) * (fcs + 1.) + 1. };
 
         let v0 = vec![
-            scaled(*col), scaled(*row),
-            scaled(*col) + fcs, scaled(*row),
-            scaled(*col) + fcs, scaled(*row) + fcs,
-            scaled(*col), scaled(*row) + fcs
+            scaled(col), scaled(row),
+            scaled(col) + fcs, scaled(row),
+            scaled(col) + fcs, scaled(row) + fcs,
+            scaled(col), scaled(row) + fcs
         ];
 
         v0.into_iter().for_each(|v| vertexes.push(v));
