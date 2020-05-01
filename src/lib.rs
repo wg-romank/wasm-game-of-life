@@ -51,5 +51,5 @@ fn compute_draw_cells_webgl(changes: &HashSet<(u32, u32)>) -> Vec<f32> {
 pub fn animation_webgl(universe: &mut universe::Universe, ticks: u32) -> Result<(), JsValue> {
     universe.tick_many(ticks);
     let vertices = compute_draw_cells_webgl(universe.alive_cells());
-    shaders::render_pipeline(&vertices)
+    shaders::render_pipeline(&vertices, 8)  // 8 vertices per quad
 }

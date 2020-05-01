@@ -115,7 +115,7 @@ pub fn setup_shaders() -> Result<WebGl, JsValue> {
     Ok(context)
 }
 
-pub fn render_pipeline(vertices: &[f32]) -> Result<(), JsValue> {
+pub fn render_pipeline(vertices: &[f32], split_by: usize) -> Result<(), JsValue> {
     let context: WebGl = get_ctx("webgl")?;
 
     let buffer = context.create_buffer().ok_or("failed to create buffer")?;
@@ -132,11 +132,11 @@ pub fn render_pipeline(vertices: &[f32]) -> Result<(), JsValue> {
     context.clear_color(0.0, 0.0, 0.0, 1.0);
     context.clear(WebGl::COLOR_BUFFER_BIT);
 
-    for c in (0..vertices.len()).step_by(8) {
+    for c in (0..vertices.len()).step_by(split_by) {
         context.draw_arrays(
             WebGl::TRIANGLE_FAN,
             c as i32,
-            (8 / 2) as i32,
+            (split_by / 2) as i32,
         );
     }
 
