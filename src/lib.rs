@@ -1,7 +1,6 @@
 use std::collections::HashSet;
 
 use wasm_bindgen::prelude::*;
-use web_sys::{WebGlRenderingContext as WebGl};
 
 mod universe;
 mod shaders;
@@ -51,32 +50,6 @@ fn compute_draw_cells_webgl(changes: &HashSet<(u32, u32)>) -> Vec<f32> {
 #[wasm_bindgen]
 pub fn animation_webgl(universe: &mut universe::Universe, ticks: u32) -> Result<(), JsValue> {
     universe.tick_many(ticks);
-
-    let context: WebGl = shaders::get_ctx("webgl")?;
     let vertices = compute_draw_cells_webgl(universe.alive_cells());
-
-    let buffer = context.create_buffer().ok_or("failed to create buffer")?;
-    context.bind_buffer(WebGl::ARRAY_BUFFER, Some(&buffer));
-
-    unsafe {
-        let vert_array = js_sys::Float32Array::view(&vertices);
-
-        context.buffer_data_with_array_buffer_view(WebGl::ARRAY_BUFFER, &vert_array, WebGl::STATIC_DRAW);
-    }
-
-    context.vertex_attrib_pointer_with_i32(0, 2, WebGl::FLOAT, false, 0, 0);
-    context.enable_vertex_attrib_array(0);
-
-    context.clear_color(0.0, 0.0, 0.0, 1.0);
-    context.clear(WebGl::COLOR_BUFFER_BIT);
-
-    for c in (0..vertices.len()).step_by(8) {
-        context.draw_arrays(
-            WebGl::TRIANGLE_FAN,
-            c as i32,
-            (8 / 2) as i32,
-        );
-
-    }
-    Ok(())
+    shaders::render_pipeline(&vertices)
 }

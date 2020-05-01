@@ -60,7 +60,7 @@ pub fn get_canvas() -> Option<web_sys::HtmlCanvasElement> {
     canvas.dyn_into::<web_sys::HtmlCanvasElement>().ok()
 }
 
-pub fn get_ctx<T : JsCast>(ctx_name: &str) -> Result<T, JsValue> {
+fn get_ctx<T : JsCast>(ctx_name: &str) -> Result<T, JsValue> {
     let ctx = get_canvas()
         .ok_or(JsValue::from_str("Failed to get canvas"))?
         .get_context(ctx_name)?
@@ -113,4 +113,32 @@ pub fn setup_shaders() -> Result<WebGl, JsValue> {
     context.uniform2f(Some(&canvas_size), canvas.width() as f32, canvas.height() as f32);
 
     Ok(context)
+}
+
+pub fn render_pipeline(vertices: &Vec<f32>) -> Result<(), JsValue> {
+    let context: WebGl = get_ctx("webgl")?;
+
+    let buffer = context.create_buffer().ok_or("failed to create buffer")?;
+    context.bind_buffer(WebGl::ARRAY_BUFFER, Some(&buffer));
+
+    unsafe {
+        let vert_array = js_sys::Float32Array::view(&vertices);
+        context.buffer_data_with_array_buffer_view(WebGl::ARRAY_BUFFER, &vert_array, WebGl::STATIC_DRAW);
+    }
+
+    context.vertex_attrib_pointer_with_i32(0, 2, WebGl::FLOAT, false, 0, 0);
+    context.enable_vertex_attrib_array(0);
+
+    context.clear_color(0.0, 0.0, 0.0, 1.0);
+    context.clear(WebGl::COLOR_BUFFER_BIT);
+
+    for c in (0..vertices.len()).step_by(8) {
+        context.draw_arrays(
+            WebGl::TRIANGLE_FAN,
+            c as i32,
+            (8 / 2) as i32,
+        );
+    }
+
+    Ok(())
 }
