@@ -1,7 +1,8 @@
+use std::collections::HashSet;
+
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::{WebGlProgram, WebGlRenderingContext as WebGl, WebGlShader};
-use std::collections::HashSet;
 
 mod universe;
 
@@ -110,39 +111,21 @@ pub fn setup_webgl() -> Result<(), JsValue> {
 
 #[wasm_bindgen]
 pub fn animation_webgl(universe: &mut universe::Universe, ticks: u32) -> Result<(), JsValue> {
-    let context: WebGl = get_ctx("webgl")?;
     universe.tick_many(ticks);
+
+    let context: WebGl = get_ctx("webgl")?;
     let vertices = compute_draw_cells_webgl(universe.alive_cells());
 
     let buffer = context.create_buffer().ok_or("failed to create buffer")?;
     context.bind_buffer(WebGl::ARRAY_BUFFER, Some(&buffer));
 
-    // Note that `Float32Array::view` is somewhat dangerous (hence the
-    // `unsafe`!). This is creating a raw view into our module's
-    // `WebAssembly.Memory` buffer, but if we allocate more pages for ourself
-    // (aka do a memory allocation in Rust) it'll cause the buffer to change,
-    // causing the `Float32Array` to be invalid.
-    //
-    // As a result, after `Float32Array::view` we have to be very careful not to
-    // do any memory allocations before it's dropped.
     unsafe {
         let vert_array = js_sys::Float32Array::view(&vertices);
 
-        context.buffer_data_with_array_buffer_view(
-            WebGl::ARRAY_BUFFER,
-            &vert_array,
-            WebGl::STATIC_DRAW,
-        );
+        context.buffer_data_with_array_buffer_view(WebGl::ARRAY_BUFFER, &vert_array, WebGl::STATIC_DRAW);
     }
 
-    context.vertex_attrib_pointer_with_i32(
-        0,
-        2,
-        WebGl::FLOAT,
-        false,
-        0,
-        0);
-
+    context.vertex_attrib_pointer_with_i32(0, 2, WebGl::FLOAT, false, 0, 0);
     context.enable_vertex_attrib_array(0);
 
     context.clear_color(0.0, 0.0, 0.0, 1.0);
