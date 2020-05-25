@@ -5,6 +5,9 @@ const universe = Universe.new(64);
 let lastCall = 0;
 let cum = 0;
 
+setup_canvas(universe);
+let state = setup_webgl();
+
 const renderLoop = (timestamp) => {
     const delta = timestamp - lastCall;
     lastCall = timestamp;
@@ -13,15 +16,13 @@ const renderLoop = (timestamp) => {
     let fps = document.getElementById("frames-per-second").value;
     if (cum > 1000 / fps) {
       const ticksPerFrame = document.getElementById("ticks-per-frame").value;
-      animation_webgl(universe, ticksPerFrame);
+      animation_webgl(state, universe, ticksPerFrame);
       cum = 0;
     }
 
     requestAnimationFrame(renderLoop);
 }
 
-setup_canvas(universe);
-setup_webgl();
 requestAnimationFrame(renderLoop);
 
 const width = universe.width();

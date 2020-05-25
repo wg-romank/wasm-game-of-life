@@ -138,7 +138,7 @@ impl fmt::Display for Universe {
         }
 
         Ok(())
-    }    
+    }
 }
 
 #[test]

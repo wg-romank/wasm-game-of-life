@@ -1,57 +1,10 @@
-use web_sys::{WebGlProgram, WebGlRenderingContext as WebGl, WebGlShader};
+use web_sys::{WebGlRenderingContext as WebGl};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 
+use std::collections::HashMap;
 
-fn compile_shader(
-    context: &WebGl,
-    shader_type: u32,
-    source: &str,
-) -> Result<WebGlShader, String> {
-    let shader = context
-        .create_shader(shader_type)
-        .ok_or_else(|| String::from("Unable to create shader object"))?;
-    context.shader_source(&shader, source);
-    context.compile_shader(&shader);
-
-    if context
-        .get_shader_parameter(&shader, WebGl::COMPILE_STATUS)
-        .as_bool()
-        .unwrap_or(false)
-    {
-        Ok(shader)
-    } else {
-        Err(context
-            .get_shader_info_log(&shader)
-            .unwrap_or_else(|| String::from("Unknown error creating shader")))
-    }
-}
-
-fn link_program(
-    context: &WebGl,
-    vert_shader: &WebGlShader,
-    frag_shader: &WebGlShader,
-) -> Result<WebGlProgram, String> {
-    let program = context
-        .create_program()
-        .ok_or_else(|| String::from("Unable to create shader object"))?;
-
-    context.attach_shader(&program, vert_shader);
-    context.attach_shader(&program, frag_shader);
-    context.link_program(&program);
-
-    if context
-        .get_program_parameter(&program, WebGl::LINK_STATUS)
-        .as_bool()
-        .unwrap_or(false)
-    {
-        Ok(program)
-    } else {
-        Err(context
-            .get_program_info_log(&program)
-            .unwrap_or_else(|| String::from("Unknown error creating program object")))
-    }
-}
+use glsmrs as gl;
 
 pub fn get_canvas() -> Option<web_sys::HtmlCanvasElement> {
     let document = web_sys::window()?.document()?;
@@ -70,75 +23,52 @@ fn get_ctx<T : JsCast>(ctx_name: &str) -> Result<T, JsValue> {
         .map_err(|e| JsValue::from(e))
 }
 
-pub fn setup_shaders() -> Result<WebGl, JsValue> {
+pub fn setup_shaders() -> Result<gl::GlState, JsValue> {
     let canvas = get_canvas().ok_or(JsValue::from_str("Failed to get canvas"))?;
     let context: WebGl = get_ctx("webgl")?;
 
-    let vert_shader = compile_shader(
-        &context,
-        WebGl::VERTEX_SHADER,
-        r#"
-        precision highp float;
+    // todo compile program here
+    let state = gl::GlState::new(gl::Viewport {w: canvas.width(), h: canvas.height()});
 
-        attribute vec2 position;
-
-        uniform vec2 canvasSize;
-
-        void main() {
-            vec2 zeroOne = position / canvasSize;
-            vec2 clipSpace = zeroOne * 2.0 - 1.0;
-            gl_Position = vec4(clipSpace * vec2(1, -1), 0, 1);
-        }
-    "#,
-    )?;
-    let frag_shader = compile_shader(
-        &context,
-        WebGl::FRAGMENT_SHADER,
-        r#"
-        precision highp float;
-        void main() {
-            gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
-        }
-    "#,
-    )?;
-    let program = link_program(&context, &vert_shader, &frag_shader)?;
-    context.use_program(Some(&program));
-
-    let canvas_size = context.get_uniform_location(&program, "canvasSize")
-        .ok_or(JsValue::from(
-            format!("Failed to get uniform uCol: {}", context.get_error())
-        )
-        )?;
-
-    context.uniform2f(Some(&canvas_size), canvas.width() as f32, canvas.height() as f32);
-
-    Ok(context)
+    Ok(state)
 }
 
-pub fn render_pipeline(vertices: &[f32], split_by: usize) -> Result<(), JsValue> {
+pub fn render_pipeline(
+    state: &mut gl::GlState,
+    vertices: &[f32],
+    elements: &[u16]
+) -> Result<(), JsValue> {
     let context: WebGl = get_ctx("webgl")?;
 
-    let buffer = context.create_buffer().ok_or("failed to create buffer")?;
-    context.bind_buffer(WebGl::ARRAY_BUFFER, Some(&buffer));
+    // todo: figure out how to pass it around instead of compiling all the time
+    let program = gl::Program::new(
+        &context,
+        include_str!("../shaders/display.vert"),
+        include_str!("../shaders/display.frag"),
+        vec![
+            gl::UniformDescription::new("canvasSize", gl::UniformType::Vector2)
+        ],
+        vec![
+            gl::AttributeDescription::new("position", gl::AttributeType::Vector2)
+        ]
+    )?;
 
-    unsafe {
-        let vert_array = js_sys::Float32Array::view(&vertices);
-        context.buffer_data_with_array_buffer_view(WebGl::ARRAY_BUFFER, &vert_array, WebGl::STATIC_DRAW);
-    }
-
-    context.vertex_attrib_pointer_with_i32(0, 2, WebGl::FLOAT, false, 0, 0);
-    context.enable_vertex_attrib_array(0);
 
     context.clear_color(0.0, 0.0, 0.0, 1.0);
     context.clear(WebGl::COLOR_BUFFER_BIT);
 
-    for c in (0..vertices.len()).step_by(split_by) {
-        context.draw_arrays(
-            WebGl::TRIANGLE_FAN,
-            c as i32,
-            (split_by / 2) as i32,
-        );
-    }
+    let uniforms: HashMap<_, _> = vec![
+        // todo: use actual size instead of hardcoded
+        ("canvasSize", gl::UniformData::Vector2([395.0, 395.0]) )
+    ].into_iter().collect();
+
+    let vb: Vec<u8> = vertices.iter().flat_map(|v| v.to_ne_bytes().to_vec()).collect();
+    let eb: Vec<u8> = elements.iter().flat_map(|e| e.to_ne_bytes().to_vec()).collect();
+
+    state
+        .vertex_buffer(&context, "position", vb.as_slice())?
+        .element_buffer(&context, eb.as_slice())?
+        .run(&context, &program, &uniforms)?;
 
     Ok(())
 }

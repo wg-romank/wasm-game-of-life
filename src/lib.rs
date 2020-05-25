@@ -2,6 +2,8 @@ use std::collections::HashSet;
 
 use wasm_bindgen::prelude::*;
 
+use glsmrs as gl;
+
 mod universe;
 mod shaders;
 
@@ -21,14 +23,14 @@ pub fn setup_canvas(universe: &universe::Universe) -> Result<(), JsValue> {
 }
 
 #[wasm_bindgen]
-pub fn setup_webgl() -> Result<(), JsValue> {
-    shaders::setup_shaders()?;
-
-    Ok(())
+pub fn setup_webgl() -> Result<gl::GlState, JsValue> {
+    shaders::setup_shaders()
 }
 
-fn compute_draw_cells_webgl(changes: &HashSet<(u32, u32)>) -> Vec<f32> {
+fn compute_draw_cells_webgl(changes: &HashSet<(u32, u32)>) -> (Vec<f32>, Vec<u16>) {
     let mut vertexes = Vec::new();
+    let mut indices = Vec::new();
+    let mut current_idx = 0;
     let fcs = CELL_SIZE as f32;
 
     for &(row, col) in changes {
@@ -42,14 +44,24 @@ fn compute_draw_cells_webgl(changes: &HashSet<(u32, u32)>) -> Vec<f32> {
         ];
 
         v0.into_iter().for_each(|v| vertexes.push(v));
+
+        let e1 = vec![
+            current_idx, current_idx + 1, current_idx + 2,
+            current_idx + 2, current_idx + 3, current_idx
+        ];
+
+        e1.into_iter().for_each(|e| indices.push(e));
+        
+        // todo ???
+        current_idx += 6
     }
 
-    vertexes
+    (vertexes, indices)
 }
 
 #[wasm_bindgen]
-pub fn animation_webgl(universe: &mut universe::Universe, ticks: u32) -> Result<(), JsValue> {
+pub fn animation_webgl(state: &mut gl::GlState, universe: &mut universe::Universe, ticks: u32) -> Result<(), JsValue> {
     universe.tick_many(ticks);
-    let vertices = compute_draw_cells_webgl(universe.alive_cells());
-    shaders::render_pipeline(&vertices, 8)  // 8 vertices per quad
+    let (vertices, indices) = compute_draw_cells_webgl(universe.alive_cells());
+    shaders::render_pipeline(state, &vertices, &indices)
 }
