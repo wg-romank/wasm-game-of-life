@@ -28,7 +28,7 @@ pub fn setup_shaders() -> Result<gl::GlState, JsValue> {
     let context: WebGl = get_ctx("webgl")?;
 
     // todo compile program here
-    let state = gl::GlState::new(gl::Viewport {w: canvas.width(), h: canvas.height()});
+    let state = gl::GlState::new(&context, gl::Viewport {w: canvas.width(), h: canvas.height()});
 
     Ok(state)
 }
@@ -66,9 +66,9 @@ pub fn render_pipeline(
     let eb: Vec<u8> = elements.iter().flat_map(|e| e.to_ne_bytes().to_vec()).collect();
 
     state
-        .vertex_buffer(&context, "position", vb.as_slice())?
-        .element_buffer(&context, eb.as_slice())?
-        .run(&context, &program, &uniforms)?;
+        .vertex_buffer("position", vb.as_slice())?
+        .element_buffer(eb.as_slice())?
+        .run(&program, &uniforms)?;
 
     Ok(())
 }
