@@ -95,12 +95,6 @@ impl Universe {
 }
 
 
-macro_rules! log {
-    ( $( $t:tt )* ) => {
-        web_sys::console::log_1(&format!( $( $t )* ).into());
-    }
-}
-
 #[wasm_bindgen]
 impl Universe {
     pub fn toggle_cell(&mut self, row: u32, col: u32) {

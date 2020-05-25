@@ -9,7 +9,6 @@ mod shaders;
 
 const CELL_SIZE: u32 = 5;
 
-
 #[wasm_bindgen]
 pub fn get_cell_size() -> Result<u32, JsValue> { Ok(CELL_SIZE) }
 
@@ -22,9 +21,16 @@ pub fn setup_canvas(universe: &universe::Universe) -> Result<(), JsValue> {
     Ok(())
 }
 
+
 #[wasm_bindgen]
 pub fn setup_webgl() -> Result<gl::GlState, JsValue> {
     shaders::setup_shaders()
+}
+
+macro_rules! log {
+    ( $( $t:tt )* ) => {
+        web_sys::console::log_1(&format!( $( $t )* ).into());
+    }
 }
 
 fn compute_draw_cells_webgl(changes: &HashSet<(u32, u32)>) -> (Vec<f32>, Vec<u16>) {
@@ -56,7 +62,9 @@ fn compute_draw_cells_webgl(changes: &HashSet<(u32, u32)>) -> (Vec<f32>, Vec<u16
         current_idx += 6
     }
 
-    (vertexes, indices)
+    let indices: [u16; 6] = [0, 1, 2, 2, 3, 0];
+
+    (vertexes, indices.to_vec())
 }
 
 #[wasm_bindgen]
