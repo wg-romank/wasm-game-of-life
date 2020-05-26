@@ -53,13 +53,13 @@ pub fn setup_shaders() -> Result<gl::GlState, JsValue> {
     Ok(state)
 }
 
-pub fn setup_init_program() -> Result<gl::Program, JsValue> {
+pub fn setup_display_program() -> Result<gl::Program, JsValue> {
     let context: WebGl = get_ctx("webgl")?;
 
     gl::Program::new(
         &context,
         include_str!("../shaders/dummy.vert"),
-        include_str!("../shaders/init.frag"),
+        include_str!("../shaders/display.frag"),
         vec![
             gl::UniformDescription::new("state", gl::UniformType::Sampler2D),
         ],
@@ -84,22 +84,6 @@ pub fn setup_compute_program() -> Result<gl::Program, JsValue> {
         vec![
             gl::AttributeDescription::new("position", gl::AttributeType::Vector2),
             gl::AttributeDescription::new("uv", gl::AttributeType::Vector2),
-        ]
-    ).map_err(|e| JsValue::from(e))
-}
-
-pub fn setup_program() -> Result<gl::Program, JsValue> {
-    let context: WebGl = get_ctx("webgl")?;
-
-    gl::Program::new(
-        &context,
-        include_str!("../shaders/display.vert"),
-        include_str!("../shaders/display.frag"),
-        vec![
-            gl::UniformDescription::new("canvasSize", gl::UniformType::Vector2)
-        ],
-        vec![
-            gl::AttributeDescription::new("position", gl::AttributeType::Vector2)
         ]
     ).map_err(|e| JsValue::from(e))
 }
@@ -139,9 +123,7 @@ pub fn render_pipeline(
     context.clear_color(0.0, 0.0, 0.0, 1.0);
     context.clear(WebGl::COLOR_BUFFER_BIT);
 
-    // todo: use actual size instead of hardcoded
-    let (w, h) = (32, 32);
-    // let (w, h) = (canvas.width(), canvas.height());
+    let (w, h) = (canvas.width(), canvas.height());
     log!("Canvas {} {}", w, h);
 
     let uniforms = vec![
