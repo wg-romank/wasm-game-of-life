@@ -27,8 +27,10 @@ pub fn setup_shaders() -> Result<gl::GlState, JsValue> {
     let canvas = get_canvas().ok_or(JsValue::from_str("Failed to get canvas"))?;
     let context: WebGl = get_ctx("webgl")?;
 
-    // todo compile program here
-    let state = gl::GlState::new(&context, gl::Viewport {w: canvas.width(), h: canvas.height()});
+    let mut state = gl::GlState::new(&context, gl::Viewport {w: canvas.width(), h: canvas.height()});
+    state
+        .texture("state", None, canvas.width(), canvas.height())?
+        .texture("display", None, canvas.width(), canvas.height())?;
 
     Ok(state)
 }
@@ -55,6 +57,7 @@ pub fn render_pipeline(
     vertices: &[f32],
     elements: &[u16]
 ) -> Result<(), JsValue> {
+    let canvas = get_canvas().ok_or(JsValue::from_str("Failed to get canvas"))?;
     let context: WebGl = get_ctx("webgl")?;
 
     context.clear_color(0.0, 0.0, 0.0, 1.0);
@@ -62,7 +65,7 @@ pub fn render_pipeline(
 
     let uniforms: HashMap<_, _> = vec![
         // todo: use actual size instead of hardcoded
-        ("canvasSize", gl::UniformData::Vector2([395.0, 395.0]) )
+        ("canvasSize", gl::UniformData::Vector2([canvas.width() as f32, canvas.height() as f32]) )
     ].into_iter().collect();
 
     let vb: Vec<u8> = vertices.iter().flat_map(|v| v.to_ne_bytes().to_vec()).collect();
