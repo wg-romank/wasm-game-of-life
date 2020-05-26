@@ -33,15 +33,10 @@ pub fn setup_shaders() -> Result<gl::GlState, JsValue> {
     Ok(state)
 }
 
-pub fn render_pipeline(
-    state: &mut gl::GlState,
-    vertices: &[f32],
-    elements: &[u16]
-) -> Result<(), JsValue> {
+pub fn setup_program() -> Result<gl::Program, JsValue> {
     let context: WebGl = get_ctx("webgl")?;
 
-    // todo: figure out how to pass it around instead of compiling all the time
-    let program = gl::Program::new(
+    gl::Program::new(
         &context,
         include_str!("../shaders/display.vert"),
         include_str!("../shaders/display.frag"),
@@ -51,8 +46,16 @@ pub fn render_pipeline(
         vec![
             gl::AttributeDescription::new("position", gl::AttributeType::Vector2)
         ]
-    )?;
+    ).map_err(|e| JsValue::from(e))
+}
 
+pub fn render_pipeline(
+    program: &gl::Program,
+    state: &mut gl::GlState,
+    vertices: &[f32],
+    elements: &[u16]
+) -> Result<(), JsValue> {
+    let context: WebGl = get_ctx("webgl")?;
 
     context.clear_color(0.0, 0.0, 0.0, 1.0);
     context.clear(WebGl::COLOR_BUFFER_BIT);

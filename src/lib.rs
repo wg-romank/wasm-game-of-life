@@ -27,6 +27,11 @@ pub fn setup_webgl() -> Result<gl::GlState, JsValue> {
     shaders::setup_shaders()
 }
 
+#[wasm_bindgen]
+pub fn setup_program() -> Result<gl::Program, JsValue> {
+    shaders::setup_program()
+}
+
 macro_rules! log {
     ( $( $t:tt )* ) => {
         web_sys::console::log_1(&format!( $( $t )* ).into());
@@ -68,8 +73,13 @@ fn compute_draw_cells_webgl(changes: &HashSet<(u32, u32)>) -> (Vec<f32>, Vec<u16
 }
 
 #[wasm_bindgen]
-pub fn animation_webgl(state: &mut gl::GlState, universe: &mut universe::Universe, ticks: u32) -> Result<(), JsValue> {
+pub fn animation_webgl(
+    program: &gl::Program,
+    state: &mut gl::GlState,
+    universe: &mut universe::Universe,
+    ticks: u32
+) -> Result<(), JsValue> {
     universe.tick_many(ticks);
     let (vertices, indices) = compute_draw_cells_webgl(universe.alive_cells());
-    shaders::render_pipeline(state, &vertices, &indices)
+    shaders::render_pipeline(program, state, &vertices, &indices)
 }
