@@ -28,6 +28,11 @@ pub fn setup_webgl() -> Result<gl::GlState, JsValue> {
 }
 
 #[wasm_bindgen]
+pub fn setup_init_program() -> Result<gl::Program, JsValue> {
+    shaders::setup_init_program()
+}
+
+#[wasm_bindgen]
 pub fn setup_program() -> Result<gl::Program, JsValue> {
     shaders::setup_program()
 }

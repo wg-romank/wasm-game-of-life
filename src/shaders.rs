@@ -35,6 +35,22 @@ pub fn setup_shaders() -> Result<gl::GlState, JsValue> {
     Ok(state)
 }
 
+pub fn setup_init_program() -> Result<gl::Program, JsValue> {
+    let context: WebGl = get_ctx("webgl")?;
+
+    gl::Program::new(
+        &context,
+        include_str!("../shaders/display.vert"),
+        include_str!("../shaders/init.frag"),
+        vec![
+            gl::UniformDescription::new("canvasSize", gl::UniformType::Vector2)
+        ],
+        vec![
+            gl::AttributeDescription::new("position", gl::AttributeType::Vector2)
+        ]
+    ).map_err(|e| JsValue::from(e))
+}
+
 pub fn setup_program() -> Result<gl::Program, JsValue> {
     let context: WebGl = get_ctx("webgl")?;
 
