@@ -1,4 +1,4 @@
-import { Universe, setup_canvas, setup_program, get_cell_size, animation_webgl, setup_webgl } from "wasm-game-of-life";
+import { Universe, setup_canvas, setup_program, setup_init_program, get_cell_size, animation_webgl, setup_webgl } from "wasm-game-of-life";
 
 const universe = Universe.new(64);
 
@@ -8,6 +8,7 @@ let cum = 0;
 setup_canvas(universe);
 let state = setup_webgl();
 let program = setup_program();
+let init_program = setup_init_program();
 
 const renderLoop = (timestamp) => {
     const delta = timestamp - lastCall;
@@ -24,7 +25,8 @@ const renderLoop = (timestamp) => {
     requestAnimationFrame(renderLoop);
 }
 
-requestAnimationFrame(renderLoop);
+// requestAnimationFrame(renderLoop);
+animation_webgl(init_program, state, universe, 0);
 
 const width = universe.width();
 const height = universe.height();

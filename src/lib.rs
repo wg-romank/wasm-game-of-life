@@ -15,8 +15,10 @@ pub fn get_cell_size() -> Result<u32, JsValue> { Ok(CELL_SIZE) }
 #[wasm_bindgen]
 pub fn setup_canvas(universe: &universe::Universe) -> Result<(), JsValue> {
     let canvas = shaders::get_canvas().ok_or(JsValue::from_str("Failed getting canvas"))?;
-    canvas.set_width((CELL_SIZE + 1) * universe.width() + 1);
-    canvas.set_height((CELL_SIZE + 1) * universe.height() + 1);
+    canvas.set_width(32);
+    canvas.set_height(32);
+    // canvas.set_width((CELL_SIZE + 1) * universe.width() + 1);
+    // canvas.set_height((CELL_SIZE + 1) * universe.height() + 1);
 
     Ok(())
 }
