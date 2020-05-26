@@ -35,6 +35,11 @@ pub fn setup_init_program() -> Result<gl::Program, JsValue> {
 }
 
 #[wasm_bindgen]
+pub fn setup_compute_program() -> Result<gl::Program, JsValue> {
+    shaders::setup_compute_program()
+}
+
+#[wasm_bindgen]
 pub fn setup_program() -> Result<gl::Program, JsValue> {
     shaders::setup_program()
 }
@@ -82,11 +87,8 @@ fn compute_draw_cells_webgl(changes: &HashSet<(u32, u32)>) -> (Vec<f32>, Vec<u16
 #[wasm_bindgen]
 pub fn animation_webgl(
     program: &gl::Program,
-    state: &mut gl::GlState,
-    universe: &mut universe::Universe,
-    ticks: u32
+    compute_program: &gl::Program,
+    state: &mut gl::GlState
 ) -> Result<(), JsValue> {
-    universe.tick_many(ticks);
-    let (vertices, indices) = compute_draw_cells_webgl(universe.alive_cells());
-    shaders::render_pipeline(program, state, &vertices, &indices)
+    shaders::render_pipeline(program, compute_program, state)
 }
