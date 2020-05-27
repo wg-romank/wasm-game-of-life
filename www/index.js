@@ -13,7 +13,7 @@ let init_program = setup_init_program();
 let compute_program = setup_compute_program();
 
 // skip first 1000 iterations
-for (let i = 0; i < 1000; i+= 1) {
+for (let i = 0; i < 500; i+= 1) {
   animation_webgl(init_program, compute_program, state);
 }
 
