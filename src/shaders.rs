@@ -36,11 +36,7 @@ pub fn setup_shaders() -> Result<gl::GlState, JsValue> {
     let packu32 = |v: &[u32]| { v.iter().flat_map(|el| el.to_ne_bytes().to_vec()).collect::<Vec<u8>>() };
 
     let tex_state = (0..canvas.width() * canvas.height()).map(|idx: u32| {
-        if idx % 2 == 0 || idx % 7 == 0 {
-            20
-        } else {
-            0
-        }
+        if idx % 2 == 0 || idx % 7 == 0 { 1 } else { 0 }
     }).collect::<Vec<u32>>();
 
     state
