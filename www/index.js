@@ -15,7 +15,6 @@ const renderLoop = (timestamp) => {
 
     let fps = document.getElementById("frames-per-second").value;
     if (cum > 1000 / fps) {
-      const ticksPerFrame = document.getElementById("ticks-per-frame").value;
       animation_webgl(init_program, compute_program, state);
       cum = 0;
     }

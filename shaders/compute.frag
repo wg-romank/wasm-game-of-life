@@ -9,8 +9,6 @@ const vec4 DEAD_COLOR = vec4(0.0, 0.0, 0.0, 1.0);
 const vec4 ALIVE_COLOR = vec4(1.0, 1.0, 1.0, 1.0);
 
 vec4 textureOffset(vec2 uv, vec2 offset) {
-    // todo: handle borders?
-    // handling with clamp currently
     return texture2D(state, (uv * canvasSize + offset) / canvasSize);
 }
 
@@ -22,14 +20,14 @@ float num(vec4 v) {
     }
 }
 
-float numNeighboors() {
+float numNeighboors(vec2 v_uv) {
     float left = num(textureOffset(v_uv, vec2(1, 0)));
     float right = num(textureOffset(v_uv, vec2(-1, 0)));
     float up = num(textureOffset(v_uv, vec2(0, -1)));
     float down = num(textureOffset(v_uv, vec2(0, 1)));
 
     float leftUp = num(textureOffset(v_uv, vec2(1, -1)));
-    float rightUp = num(textureOffset(v_uv, vec2(1, 1)));
+    float rightUp = num(textureOffset(v_uv, vec2(-1, -1)));
     float leftDown = num(textureOffset(v_uv, vec2(1, 1)));
     float rightDown = num(textureOffset(v_uv, vec2(-1, 1)));
 
@@ -37,7 +35,9 @@ float numNeighboors() {
 }
 
 void main() {
-    float neighboors = numNeighboors();
+    // vec2 v_uv = vec2(v_uv.x, 1.0 - v_uv.y);
+
+    float neighboors = numNeighboors(v_uv);
     float myValue = num(texture2D(state, v_uv));
 
     if (myValue == 1.0 && neighboors < 2.0) {
@@ -46,6 +46,8 @@ void main() {
         gl_FragColor = ALIVE_COLOR;
     } else if (myValue == 1.0 && neighboors > 3.0) {
         gl_FragColor = DEAD_COLOR;
+    } else if (myValue == 0.0 && neighboors == 3.0) {
+        gl_FragColor = ALIVE_COLOR;
     } else {
         gl_FragColor = vec4(ALIVE_COLOR.xyz * myValue, 1.0);
     }
