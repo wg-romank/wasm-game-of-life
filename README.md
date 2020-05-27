@@ -21,3 +21,7 @@ In `www/`
 npm i .
 npm run start
 ```
+
+# Check it out
+
+https://wg-romank.github.io/wasm-game-of-life/
