@@ -1,3 +1,10 @@
+# Convay's Game of Life in Rust/WASM/WebGL
+
+Slightly tweaked version of original WASM tutorial. All compute is done on GPU (see `compute.frag`).
+Main idea of computing state transition on GPU is inspired by common technique of rendering scene to texture.
+
+This example uses `glsmrs` (https://github.com/wg-romank/glsmrs/) to simplify WebGL setup and make rendering to texture a bit easier.
+
 # To build wasm
 
 In root directory
@@ -14,9 +21,3 @@ In `www/`
 npm i .
 npm run start
 ```
-
-# Tweaks
-- [x] Remove redundant JS interop and do most of the logic in Rust
-- [x] Efficient re-drawing for only changed cells
-- [ ] WegbGL rendering instead of 2d canvas
-- [ ] More interesting interactive mode (spray evens instead of single taps)
