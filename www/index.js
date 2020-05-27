@@ -1,4 +1,4 @@
-import { setup_canvas, setup_init_program, setup_compute_program, get_cell_size, animation_webgl, setup_webgl } from "wasm-game-of-life";
+import { setup_canvas, setup_init_program, setup_compute_program, animation_webgl, setup_webgl } from "wasm-game-of-life";
 
 let lastCall = 0;
 let cum = 0;
@@ -23,21 +23,3 @@ const renderLoop = (timestamp) => {
 }
 
 requestAnimationFrame(renderLoop);
-// animation_webgl(init_program, compute_program, state);
-
-// const canvas = document.getElementById("game-of-life-canvas");
-// const CELL_SIZE = get_cell_size();
-
-// canvas.addEventListener("click", event => {
-//   const boundingRect = canvas.getBoundingClientRect();
-//   const scaleX = canvas.width / boundingRect.width;
-//   const scaleY = canvas.height / boundingRect.height;
-
-//   const canvasLeft = (event.clientX - boundingRect.left) * scaleX;
-//   const canvasTop = (event.clientY - boundingRect.top) * scaleY;
-
-//   const row = Math.min(Math.floor(canvasTop / (CELL_SIZE + 1)), height - 1);
-//   const col = Math.min(Math.floor(canvasLeft / (CELL_SIZE + 1)), width - 1);
-
-//   universe.toggle_cell(row, col);
-// })
