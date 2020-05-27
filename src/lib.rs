@@ -5,18 +5,6 @@ use glsmrs as gl;
 mod shaders;
 
 #[wasm_bindgen]
-pub fn setup_canvas() -> Result<(), JsValue> {
-    let canvas = shaders::get_canvas().ok_or(JsValue::from_str("Failed getting canvas"))?;
-    canvas.set_width(1024);
-    canvas.set_height(1024);
-    // canvas.set_width((CELL_SIZE + 1) * universe.width() + 1);
-    // canvas.set_height((CELL_SIZE + 1) * universe.height() + 1);
-
-    Ok(())
-}
-
-
-#[wasm_bindgen]
 pub fn setup_webgl() -> Result<gl::GlState, JsValue> {
     shaders::setup_shaders()
 }
