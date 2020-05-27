@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8"/>
+        <style>
+            body {
+                background-color: black;
+                position: absolute;
+                margin: 0;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                display: flex;
+                overflow: hidden;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+            }
+            canvas {
+                width: 1280px;
+                height: 720px;
+                display: block;
+                image-rendering: crisp-edges;
+            }
+        </style>
+    </head>
+    <body>
+        <canvas id="game-of-life-canvas"></canvas>
+        <label style="color: white;">FPS</label>
+        <input id="frames-per-second" type="range" min="1" max="60" step="1" value="60"/>
+        <script src="./bootstrap.js"></script>
+    </body>
+</html>
