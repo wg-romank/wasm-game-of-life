@@ -14,6 +14,7 @@ vec4 rgbToDec(float r, float g, float b) {
 }
 
 void main() {
+    vec4 stillAlive = rgbToDec(21.0, 151.0, 183.0);
     vec4 alive = rgbToDec(143.0, 152.0, 171.0);
     // vec4 alive = rgbToDec(0.0, 255.0, 229.0);
     // vec4 dUp = rgbToDec(0.0, 153.0, 255.0);
@@ -36,6 +37,6 @@ void main() {
     } else if (value.x == ALIVE_COLOR) {
         gl_FragColor = alive;
     } else if (value.x == STILL_ALIVE_COLOR) {
-        gl_FragColor = dUp;
+        gl_FragColor = stillAlive;
     }
 }
