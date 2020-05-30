@@ -2,9 +2,17 @@ use web_sys::{WebGlRenderingContext as WebGl};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 
+use js_sys;
+
 use std::collections::HashMap;
 
 use glsmrs as gl;
+
+macro_rules! log {
+    ( $( $t:tt )* ) => {
+        web_sys::console::log_1(&format!( $( $t )* ).into());
+    }
+}
 
 pub fn get_canvas() -> Option<web_sys::HtmlCanvasElement> {
     let document = web_sys::window()?.document()?;
@@ -23,7 +31,7 @@ fn get_ctx<T : JsCast>(ctx_name: &str) -> Result<T, JsValue> {
         .map_err(|e| JsValue::from(e))
 }
 
-pub fn setup_shaders() -> Result<gl::GlState, JsValue> {
+pub fn setup_shaders(w: u32, h: u32) -> Result<gl::GlState, JsValue> {
     let canvas = get_canvas().ok_or(JsValue::from_str("Failed to get canvas"))?;
     let context: WebGl = get_ctx("webgl")?;
 
@@ -35,16 +43,16 @@ pub fn setup_shaders() -> Result<gl::GlState, JsValue> {
     let packu16 = |v: &[u16]| { v.iter().flat_map(|el| el.to_ne_bytes().to_vec()).collect::<Vec<u8>>() };
     let packu32 = |v: &[u32]| { v.iter().flat_map(|el| el.to_ne_bytes().to_vec()).collect::<Vec<u8>>() };
 
-    let tex_state = (0..canvas.width() * canvas.height()).map(|idx: u32| {
-        if idx % 2 == 0 || idx % 7 == 0 { 1 } else { 0 }
+    let tex_state = (0..w * h).map(|idx: u32| {
+        if js_sys::Math::random() > 0.9 || idx % 7 == 0 { 1 } else { 0 }
     }).collect::<Vec<u32>>();
 
     state
         .vertex_buffer("position", packf32(&vertices).as_slice())?
         .vertex_buffer("uv", packf32(&uvs).as_slice())?
         .element_buffer(packu16(&indices).as_slice())?
-        .texture("display", Some(packu32(&tex_state).as_slice()), canvas.width(), canvas.height())?
-        .texture("state", None, canvas.width(), canvas.height())?;
+        .texture("display", Some(packu32(&tex_state).as_slice()), w, h)?
+        .texture("state", None, w, h)?;
 
     Ok(state)
 }
@@ -119,26 +127,17 @@ pub fn make_quad() -> ([f32; 8], [f32; 8], [u16; 6]) {
     (vertices, uvs, indices)
 }
 
-macro_rules! log {
-    ( $( $t:tt )* ) => {
-        web_sys::console::log_1(&format!( $( $t )* ).into());
-    }
-}
-
 pub fn render_pipeline(
     display_program: &gl::Program,
     compute_program: &gl::Program,
     copy_program: &gl::Program,
+    w: u32, h: u32,
     state: &mut gl::GlState
 ) -> Result<(), JsValue> {
-    let canvas = get_canvas().ok_or(JsValue::from_str("Failed to get canvas"))?;
     let context: WebGl = get_ctx("webgl")?;
 
     context.clear_color(0.0, 0.0, 0.0, 1.0);
     context.clear(WebGl::COLOR_BUFFER_BIT);
-
-    let (w, h) = (canvas.width(), canvas.height());
-    log!("Canvas {} {}", w, h);
 
     let uniforms = vec![
         ("canvasSize", gl::UniformData::Vector2([w as f32, h as f32]) ),

@@ -5,8 +5,8 @@ use glsmrs as gl;
 mod shaders;
 
 #[wasm_bindgen]
-pub fn setup_webgl() -> Result<gl::GlState, JsValue> {
-    shaders::setup_shaders()
+pub fn setup_webgl(w: u32, h: u32) -> Result<gl::GlState, JsValue> {
+    shaders::setup_shaders(w, h)
 }
 
 #[wasm_bindgen]
@@ -29,7 +29,8 @@ pub fn animation_webgl(
     program: &gl::Program,
     compute_program: &gl::Program,
     copy_program: &gl::Program,
+    w: u32, h: u32,
     state: &mut gl::GlState
 ) -> Result<(), JsValue> {
-    shaders::render_pipeline(program, compute_program, copy_program, state)
+    shaders::render_pipeline(program, compute_program, copy_program, w, h, state)
 }
