@@ -9,8 +9,8 @@ let brect = canvas.getBoundingClientRect();
 let oWidth = brect.width;
 let oHeight = brect.height;
 
-let mWidth = Math.floor(brect.width / 8);
-let mHeight = Math.floor(brect.height / 8)
+let mWidth = Math.floor(brect.width / 4);
+let mHeight = Math.floor(brect.height / 4)
 
 canvas.setAttribute('width', oWidth);
 canvas.setAttribute('height', oHeight);
