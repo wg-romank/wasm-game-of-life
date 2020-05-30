@@ -66,6 +66,23 @@ pub fn setup_display_program() -> Result<gl::Program, JsValue> {
     ).map_err(|e| JsValue::from(e))
 }
 
+pub fn setup_copy_program() -> Result<gl::Program, JsValue> {
+    let context: WebGl = get_ctx("webgl")?;
+
+    gl::Program::new(
+        &context,
+        include_str!("../shaders/dummy.vert"),
+        include_str!("../shaders/copy.frag"),
+        vec![
+            gl::UniformDescription::new("state", gl::UniformType::Sampler2D),
+        ],
+        vec![
+            gl::AttributeDescription::new("position", gl::AttributeType::Vector2),
+            gl::AttributeDescription::new("uv", gl::AttributeType::Vector2),
+        ]
+    ).map_err(|e| JsValue::from(e))
+}
+
 pub fn setup_compute_program() -> Result<gl::Program, JsValue> {
     let context: WebGl = get_ctx("webgl")?;
 
@@ -109,8 +126,9 @@ macro_rules! log {
 }
 
 pub fn render_pipeline(
-    program: &gl::Program,
+    display_program: &gl::Program,
     compute_program: &gl::Program,
+    copy_program: &gl::Program,
     state: &mut gl::GlState
 ) -> Result<(), JsValue> {
     let canvas = get_canvas().ok_or(JsValue::from_str("Failed to get canvas"))?;
@@ -128,14 +146,13 @@ pub fn render_pipeline(
     ].into_iter().collect::<HashMap<_, _>>();
 
     let copy_uniforms = vec![
-        ("canvasSize", gl::UniformData::Vector2([w as f32, h as f32]) ),
         ("state", gl::UniformData::Texture("state")),
     ].into_iter().collect::<HashMap<_,_>>();
 
     state
         .run_mut(&compute_program, &uniforms, "state")?
-        .run_mut(&program, &copy_uniforms, "display")?
-        .run(&program, &uniforms)?;
+        .run_mut(&copy_program, &copy_uniforms, "display")?
+        .run(&display_program, &uniforms)?;
 
     Ok(())
 }
