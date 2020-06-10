@@ -15,6 +15,11 @@ pub fn setup_init_program() -> Result<gl::Program, JsValue> {
 }
 
 #[wasm_bindgen]
+pub fn setup_display_monochrome() -> Result<gl::Program, JsValue> {
+    shaders::setup_display_monochrome_program()
+}
+
+#[wasm_bindgen]
 pub fn setup_compute_program() -> Result<gl::Program, JsValue> {
     shaders::setup_compute_program()
 }

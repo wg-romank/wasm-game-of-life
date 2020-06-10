@@ -1,4 +1,4 @@
-import { setup_copy_program, setup_init_program, setup_compute_program, animation_webgl, setup_webgl } from "wasm-game-of-life";
+import { setup_copy_program, setup_display_monochrome, setup_init_program, setup_compute_program, animation_webgl, setup_webgl } from "wasm-game-of-life";
 
 let ppi = window.devicePixelRatio * 96;
 
@@ -22,12 +22,23 @@ console.log(mHeight);
 
 let state = setup_webgl(mWidth, mHeight);
 let init_program = setup_init_program();
+let monochrome = setup_display_monochrome();
 let compute_program = setup_compute_program();
 let copy_program = setup_copy_program();
 
+let draw_program = init_program;
+
+document.getElementById("swap_colors").addEventListener("change", () => {
+  if (draw_program == init_program) {
+    draw_program = monochrome;
+  } else {
+    draw_program = init_program;
+  }
+});
+
 // skip first 100 iterations
 for (let i = 0; i < 100; i+= 1) {
-  animation_webgl(init_program, compute_program, copy_program, mWidth, mHeight, state);
+  animation_webgl(draw_program, compute_program, copy_program, mWidth, mHeight, state);
 }
 
 let lastCall = 0;
@@ -40,7 +51,7 @@ const renderLoop = (timestamp) => {
 
   let fps = document.getElementById("frames-per-second").value;
   if (cum > 1000 / fps) {
-    animation_webgl(init_program, compute_program, copy_program, mWidth, mHeight, state);
+    animation_webgl(draw_program, compute_program, copy_program, mWidth, mHeight, state);
     cum = 0;
   }
 
