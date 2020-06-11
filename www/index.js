@@ -1,4 +1,4 @@
-import { setup_copy_program, setup_display_monochrome, setup_init_program, setup_compute_program, animation_webgl, setup_webgl } from "wasm-game-of-life";
+import { setup_copy_program, setup_display_monochrome_program, setup_display_program, setup_compute_program, animation_webgl, setup_webgl } from "wasm-game-of-life";
 
 let ppi = window.devicePixelRatio * 96;
 
@@ -21,18 +21,18 @@ console.log(mWidth);
 console.log(mHeight);
 
 let state = setup_webgl(mWidth, mHeight);
-let init_program = setup_init_program();
-let monochrome = setup_display_monochrome();
+let color_program = setup_display_program();
+let monochrome_program = setup_display_monochrome_program();
 let compute_program = setup_compute_program();
 let copy_program = setup_copy_program();
 
-let draw_program = init_program;
+let draw_program = color_program;
 
 document.getElementById("swap_colors").addEventListener("change", () => {
-  if (draw_program == init_program) {
-    draw_program = monochrome;
+  if (draw_program == color_program) {
+    draw_program = monochrome_program;
   } else {
-    draw_program = init_program;
+    draw_program = color_program;
   }
 });
 

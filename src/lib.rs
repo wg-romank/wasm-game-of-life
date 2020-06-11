@@ -10,12 +10,12 @@ pub fn setup_webgl(w: u32, h: u32) -> Result<gl::GlState, JsValue> {
 }
 
 #[wasm_bindgen]
-pub fn setup_init_program() -> Result<gl::Program, JsValue> {
+pub fn setup_display_program() -> Result<gl::Program, JsValue> {
     shaders::setup_display_program()
 }
 
 #[wasm_bindgen]
-pub fn setup_display_monochrome() -> Result<gl::Program, JsValue> {
+pub fn setup_display_monochrome_program() -> Result<gl::Program, JsValue> {
     shaders::setup_display_monochrome_program()
 }
 
