@@ -1,30 +1,20 @@
 import { setup_copy_program, setup_display_monochrome_program, setup_display_program, setup_compute_program, animation_webgl, setup_webgl } from "wasm-game-of-life";
 
-let ppi = window.devicePixelRatio * 96;
+const canvas = document.getElementById("game-of-life-canvas");
+const brect = canvas.getBoundingClientRect();
+canvas.setAttribute('width', brect.width);
+canvas.setAttribute('height', brect.height);
 
-let canvas = document.getElementById("game-of-life-canvas");
-let brect = canvas.getBoundingClientRect();
+const cellsPerInch = 25;
+const ppi = window.devicePixelRatio * 96;
+const mWidth = Math.floor(brect.width / ppi * cellsPerInch);
+const mHeight = Math.floor(brect.height / ppi * cellsPerInch)
 
-let oWidth = brect.width;
-let oHeight = brect.height;
-
-canvas.setAttribute('width', oWidth);
-canvas.setAttribute('height', oHeight);
-
-let cellsPerInch = 25;
-
-let mWidth = Math.floor(brect.width / ppi * cellsPerInch);
-let mHeight = Math.floor(brect.height / ppi * cellsPerInch)
-
-console.log(ppi)
-console.log(mWidth);
-console.log(mHeight);
-
-let state = setup_webgl(mWidth, mHeight);
-let color_program = setup_display_program();
-let monochrome_program = setup_display_monochrome_program();
-let compute_program = setup_compute_program();
-let copy_program = setup_copy_program();
+const state = setup_webgl(mWidth, mHeight);
+const color_program = setup_display_program();
+const monochrome_program = setup_display_monochrome_program();
+const compute_program = setup_compute_program();
+const copy_program = setup_copy_program();
 
 let draw_program = color_program;
 
