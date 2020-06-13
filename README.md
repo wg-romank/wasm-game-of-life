@@ -1,5 +1,12 @@
 # Convay's Game of Life in Rust/WASM/WebGL
 
+
+# Check it out
+
+![](media/animated.gif)
+
+https://wg-romank.github.io/wasm-game-of-life/
+
 Slightly tweaked version of original WASM tutorial. All compute is done on GPU (see `compute.frag`).
 Main idea of computing state transition on GPU is inspired by common technique of rendering scene to texture.
 
@@ -19,9 +26,3 @@ make wasm
 ```
 make serve
 ```
-
-# Check it out
-
-![](media/animated.gif)
-
-https://wg-romank.github.io/wasm-game-of-life/
