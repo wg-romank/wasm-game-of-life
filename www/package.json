@@ -7,6 +7,7 @@
     "start": "webpack-dev-server --config webpack.config.js"
   },
   "dependencies": {
+    "zingtouch": "1.0.6",
     "wasm-game-of-life": "file:../pkg"
   },
   "devDependencies": {
