@@ -100,11 +100,11 @@ pub fn render_pipeline<'a>(
 ) -> Result<(), JsValue> {
     let uniforms = vec![
         ("canvasSize", gl::UniformData::Vector2([w as f32, h as f32]) ),
-        ("state", gl::UniformData::Texture(state_fb.color_slot.clone().unwrap())),
+        ("state", gl::UniformData::Texture(state_fb.color_slot.as_ref().unwrap().clone())),
     ].into_iter().collect::<HashMap<_, _>>();
 
     let copy_uniforms = vec![
-        ("state", gl::UniformData::Texture(display_fb.color_slot.clone().unwrap())),
+        ("state", gl::UniformData::Texture(display_fb.color_slot.as_ref().unwrap().clone())),
     ].into_iter().collect::<HashMap<&'static str, gl::UniformData>>();
 
     state

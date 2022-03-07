@@ -23,12 +23,14 @@ pub struct Render {
     color: bool,
 }
 
+use std::rc::Rc;
+
 #[wasm_bindgen]
 impl Render {
     pub fn new(w: u32, h: u32) -> Result<Render, JsValue> {
         let canvas =
             gl::util::get_canvas("game-of-life-canvas").ok_or(format!("failed to find canvas"))?;
-        let ctx: WebGl = gl::util::get_ctx_from_canvas(&canvas, "webgl")?;
+        let ctx: Rc<WebGl> = Rc::new(gl::util::get_ctx_from_canvas(&canvas, "webgl")?);
 
         let state = shaders::setup_shaders(&canvas, &ctx)?;
         let display_program = shaders::setup_display_program(&ctx)?;
