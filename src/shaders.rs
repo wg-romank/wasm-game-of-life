@@ -1,3 +1,4 @@
+use gl::AttributeVector2;
 use gl::Ctx;
 use gl::Pipeline;
 use gl::RenderTarget;
@@ -23,15 +24,9 @@ pub fn setup_shaders(
 ) -> Result<Mesh, JsValue> {
     let (vertices, uvs, indices) = make_quad();
 
-    let packf32 = |v: &[f32]| {
-        v.iter()
-            .flat_map(|el| el.to_ne_bytes().to_vec())
-            .collect::<Vec<u8>>()
-    };
-
     let mesh = gl::mesh::Mesh::new(&context, &indices)?
-        .with_attribute("position", gl::AttributeType::Vector2, &packf32(&vertices))?
-        .with_attribute("uv", gl::AttributeType::Vector2, &packf32(&uvs))?;
+        .with_attribute::<AttributeVector2>("position", &vertices)?
+        .with_attribute::<AttributeVector2>("uv", &uvs)?;
 
     Ok(mesh)
 }
@@ -66,9 +61,9 @@ pub fn setup_compute_program(context: &Ctx) -> Result<gl::Program, JsValue> {
     .map_err(|e| JsValue::from(e))
 }
 
-pub fn make_quad() -> ([f32; 8], [f32; 8], [u16; 6]) {
-    let vertices: [f32; 8] = [-1.0, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0];
-    let uvs: [f32; 8] = [0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0];
+pub fn make_quad() -> ([[f32; 2]; 4], [[f32; 2]; 4], [u16; 6]) {
+    let vertices: [[f32; 2]; 4] = [[-1.0, -1.0], [1.0, -1.0], [1.0, 1.0], [-1.0, 1.0]];
+    let uvs: [[f32; 2]; 4] = [[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]];
     let indices: [u16; 6] = [0, 1, 2, 2, 3, 0];
 
     (vertices, uvs, indices)
