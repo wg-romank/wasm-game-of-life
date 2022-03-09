@@ -7,7 +7,7 @@ const brect = canvas.getBoundingClientRect();
 canvas.setAttribute('width', brect.width);
 canvas.setAttribute('height', brect.height);
 
-const cellsPerInch = 50;
+const cellsPerInch = 100;
 const ppi = window.devicePixelRatio * 96;
 const mWidth = Math.floor(brect.width / ppi * cellsPerInch);
 const mHeight = Math.floor(brect.height / ppi * cellsPerInch)
@@ -22,6 +22,11 @@ activeRegion.bind(canvas, 'tap', () => {
 
 let lastCall = 0;
 let cum = 0;
+
+// skip first 50 iterations
+for (var i = 0; i < 50; i++) {
+  r.frame();
+}
 
 const renderLoop = (timestamp) => {
   const delta = timestamp - lastCall;

@@ -21,6 +21,7 @@ pub struct Render {
     copy_program: gl::Program,
     state_fb: Framebuffer<Rc<UploadedTexture>, ()>,
     display_fb: Framebuffer<Rc<UploadedTexture>, ()>,
+    vp: Viewport,
     color: bool,
 }
 
@@ -54,10 +55,14 @@ impl Render {
         let state_texture = Rc::new(texture_spec.upload(&ctx, Some(&tex_state))?);
         let display_texture = Rc::new(texture_spec.upload(&ctx, None)?);
 
+        let vpp = Viewport::new(w, h);
+
         let state_fb =
-            Framebuffer::new(&ctx, Viewport::new(w, h))?.with_color_slot(&ctx, state_texture);
+            Framebuffer::new(&ctx, vpp)?.with_color_slot(&ctx, state_texture);
         let display_fb =
-            Framebuffer::new(&ctx, Viewport::new(w, h))?.with_color_slot(&ctx, display_texture);
+            Framebuffer::new(&ctx, vpp)?.with_color_slot(&ctx, display_texture);
+
+        let vp = Viewport::new(canvas.width(), canvas.height());
 
         let copy_program = shaders::setup_copy_program(&ctx)?;
 
@@ -70,6 +75,7 @@ impl Render {
             copy_program,
             state_fb,
             display_fb,
+            vp,
             color: true,
         })
     }
@@ -91,6 +97,7 @@ impl Render {
             &mut self.mesh,
             &mut self.state_fb,
             &mut self.display_fb,
+            self.vp,
         )
     }
 }
