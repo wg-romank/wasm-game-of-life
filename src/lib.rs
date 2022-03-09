@@ -1,10 +1,13 @@
 use std::ops::Not;
 
-use gl::{texture::{Framebuffer, Viewport, UploadedTexture}, mesh::Mesh};
+use gl::texture::ColorFormat;
 use wasm_bindgen::prelude::*;
 
 use glsmrs as gl;
 use gl::Ctx;
+use gl::GL;
+use gl::texture::TextureSpec;
+use gl::{texture::{Framebuffer, Viewport, UploadedTexture}, mesh::Mesh};
 
 mod shaders;
 
@@ -35,14 +38,7 @@ impl Render {
         let monochrome_display_program = shaders::setup_display_monochrome_program(&ctx)?;
         let compute_program = shaders::setup_compute_program(&ctx)?;
 
-        let texture_spec = gl::texture::TextureSpec {
-            color_format: gl::GL::RGBA,
-            dimensions: [w, h],
-            interpolation_min: gl::GL::NEAREST,
-            interpolation_mag: gl::GL::NEAREST,
-            wrap_t: gl::GL::CLAMP_TO_EDGE,
-            wrap_s: gl::GL::CLAMP_TO_EDGE,
-        };
+        let texture_spec = TextureSpec::pixel(ColorFormat(GL::RGBA), [w, h]);
 
         let tex_state = (0..w * h)
             .map(|idx: u32| {
