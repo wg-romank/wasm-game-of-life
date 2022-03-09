@@ -1,6 +1,9 @@
+use gl::Ctx;
+use gl::Pipeline;
+use gl::mesh::Mesh;
+use gl::texture::Framebuffer;
+use gl::texture::UploadedTexture;
 use wasm_bindgen::prelude::*;
-use web_sys::HtmlCanvasElement;
-use web_sys::WebGlRenderingContext as WebGl;
 
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -14,9 +17,8 @@ macro_rules! log {
 }
 
 pub fn setup_shaders(
-    canvas: &HtmlCanvasElement,
-    context: &Rc<WebGl>,
-) -> Result<gl::GlState, JsValue> {
+    context: &Ctx,
+) -> Result<Mesh, JsValue> {
     let (vertices, uvs, indices) = make_quad();
 
     let packf32 = |v: &[f32]| {
@@ -29,48 +31,35 @@ pub fn setup_shaders(
         .with_attribute("position", gl::AttributeType::Vector2, &packf32(&vertices))?
         .with_attribute("uv", gl::AttributeType::Vector2, &packf32(&uvs))?;
 
-    let state = gl::GlState::new(
-        &context,
-        gl::texture::Viewport::new(canvas.width(), canvas.height()),
-    )
-    .add_mesh(mesh);
-    Ok(state)
+    Ok(mesh)
 }
 
-pub fn shader(context: &Rc<WebGl>, frag_shader: &str) -> Result<gl::Program, JsValue> {
+pub fn shader(context: &Ctx, frag_shader: &str) -> Result<gl::Program, JsValue> {
     gl::Program::new(
         context,
         include_str!("../shaders/dummy.vert"),
         frag_shader,
-        vec![gl::UniformDescription::new(
-            "state",
-            gl::UniformType::Sampler2D,
-        )],
     )
     .map_err(|e| JsValue::from(e))
 }
 
-pub fn setup_display_program(ctx: &Rc<WebGl>) -> Result<gl::Program, JsValue> {
+pub fn setup_display_program(ctx: &Ctx) -> Result<gl::Program, JsValue> {
     shader(ctx, include_str!("../shaders/display.frag"))
 }
 
-pub fn setup_display_monochrome_program(ctx: &Rc<WebGl>) -> Result<gl::Program, JsValue> {
+pub fn setup_display_monochrome_program(ctx: &Ctx) -> Result<gl::Program, JsValue> {
     shader(ctx, include_str!("../shaders/display_monochrome.frag"))
 }
 
-pub fn setup_copy_program(ctx: &Rc<WebGl>) -> Result<gl::Program, JsValue> {
+pub fn setup_copy_program(ctx: &Ctx) -> Result<gl::Program, JsValue> {
     shader(ctx, include_str!("../shaders/copy.frag"))
 }
 
-pub fn setup_compute_program(context: &Rc<WebGl>) -> Result<gl::Program, JsValue> {
+pub fn setup_compute_program(context: &Ctx) -> Result<gl::Program, JsValue> {
     gl::Program::new(
         &context,
         include_str!("../shaders/dummy.vert"),
         include_str!("../shaders/compute.frag"),
-        vec![
-            gl::UniformDescription::new("state", gl::UniformType::Sampler2D),
-            gl::UniformDescription::new("canvasSize", gl::UniformType::Vector2),
-        ],
     )
     .map_err(|e| JsValue::from(e))
 }
@@ -84,20 +73,19 @@ pub fn make_quad() -> ([f32; 8], [f32; 8], [u16; 6]) {
 }
 
 pub fn render_pipeline<'a>(
+    ctx: &Ctx,
     display_program: &gl::Program,
     compute_program: &gl::Program,
     copy_program: &gl::Program,
-    w: u32,
-    h: u32,
-    state: &mut gl::GlState,
-    state_fb: &mut gl::texture::Framebuffer,
-    display_fb: &mut gl::texture::Framebuffer,
+    mesh: &Mesh,
+    state_fb: &mut Framebuffer<Rc<UploadedTexture>, ()>,
+    display_fb: &mut Framebuffer<Rc<UploadedTexture>, ()>,
 ) -> Result<(), JsValue> {
     let uniforms = vec![
-        ("canvasSize", gl::UniformData::Vector2([w as f32, h as f32])),
+        ("canvasSize", gl::UniformData::Vector2(display_fb.dimensions())),
         (
             "state",
-            gl::UniformData::Texture(state_fb.color_slot.as_ref().unwrap().clone()),
+            gl::UniformData::Texture(state_fb.color_slot()),
         ),
     ]
     .into_iter()
@@ -105,14 +93,16 @@ pub fn render_pipeline<'a>(
 
     let copy_uniforms = vec![(
         "state",
-        gl::UniformData::Texture(display_fb.color_slot.as_ref().unwrap().clone()),
+        gl::UniformData::Texture(display_fb.color_slot()),
     )]
     .into_iter()
     .collect::<HashMap<&'static str, gl::UniformData>>();
 
-    state
-        .run_mut(&compute_program, &uniforms, display_fb)?
-        .run_mut(&copy_program, &copy_uniforms, state_fb)?
-        .run(&display_program, &uniforms)?;
+    let pipeline = Pipeline::new();
+
+    pipeline
+        .shade(&ctx, &compute_program, &uniforms, vec![mesh], Some(display_fb))?
+        .shade(&ctx, &copy_program, &copy_uniforms, vec![mesh], Some(state_fb))?
+        .shade::<(), ()>(&ctx, &display_program, &uniforms, vec![mesh], None)?;
     Ok(())
 }
