@@ -1,11 +1,9 @@
 use gl::AttributeVector2;
 use gl::Ctx;
 use gl::Pipeline;
-use gl::RenderTarget;
 use gl::mesh::Mesh;
 use gl::texture::Framebuffer;
 use gl::texture::UploadedTexture;
-use gl::texture::Viewport;
 use wasm_bindgen::prelude::*;
 
 use std::collections::HashMap;
@@ -70,6 +68,7 @@ pub fn make_quad() -> ([[f32; 2]; 4], [[f32; 2]; 4], [u16; 6]) {
 }
 
 pub fn render_pipeline<'a>(
+    pipeline: &Pipeline,
     ctx: &Ctx,
     display_program: &gl::Program,
     compute_program: &gl::Program,
@@ -77,7 +76,6 @@ pub fn render_pipeline<'a>(
     mesh: &Mesh,
     state_fb: &mut Framebuffer<Rc<UploadedTexture>, ()>,
     display_fb: &mut Framebuffer<Rc<UploadedTexture>, ()>,
-    vp: Viewport,
 ) -> Result<(), JsValue> {
     let uniforms = vec![
         ("canvasSize", gl::UniformData::Vector2(display_fb.dimensions())),
@@ -96,11 +94,9 @@ pub fn render_pipeline<'a>(
     .into_iter()
     .collect::<HashMap<&'static str, gl::UniformData>>();
 
-    let pipeline = Pipeline::new();
-
     pipeline
-        .shade(&ctx, &compute_program, &uniforms, vec![mesh], RenderTarget::Framebuffer(display_fb))?
-        .shade(&ctx, &copy_program, &copy_uniforms, vec![mesh], RenderTarget::Framebuffer(state_fb))?
-        .shade::<(), ()>(&ctx, &display_program, &uniforms, vec![mesh], RenderTarget::Display(vp))?;
+        .shade(&ctx, &compute_program, &uniforms, vec![mesh], Some(display_fb))?
+        .shade(&ctx, &copy_program, &copy_uniforms, vec![mesh], Some(state_fb))?
+        .shade::<(), ()>(&ctx, &display_program, &uniforms, vec![mesh], None)?;
     Ok(())
 }

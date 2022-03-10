@@ -1,5 +1,6 @@
 use std::ops::Not;
 
+use gl::Pipeline;
 use gl::texture::ColorFormat;
 use wasm_bindgen::prelude::*;
 
@@ -21,7 +22,7 @@ pub struct Render {
     copy_program: gl::Program,
     state_fb: Framebuffer<Rc<UploadedTexture>, ()>,
     display_fb: Framebuffer<Rc<UploadedTexture>, ()>,
-    vp: Viewport,
+    pipeline: Pipeline,
     color: bool,
 }
 
@@ -32,7 +33,7 @@ impl Render {
     pub fn new(w: u32, h: u32) -> Result<Render, JsValue> {
         let canvas =
             gl::util::get_canvas("game-of-life-canvas").ok_or(format!("failed to find canvas"))?;
-        let ctx = Ctx::new(gl::util::get_ctx_from_canvas(&canvas, "webgl")?);
+        let ctx = Ctx::new(gl::util::get_ctx_from_canvas(&canvas, "webgl")?)?;
 
         let mesh = shaders::setup_shaders(&ctx)?;
         let display_program = shaders::setup_display_program(&ctx)?;
@@ -52,7 +53,7 @@ impl Render {
             .flat_map(|v: u32| v.to_ne_bytes().to_vec())
             .collect::<Vec<u8>>();
 
-        let state_texture = Rc::new(texture_spec.upload(&ctx, Some(&tex_state))?);
+        let state_texture = Rc::new(texture_spec.upload_u8(&ctx, &tex_state)?);
         let display_texture = Rc::new(texture_spec.upload(&ctx, None)?);
 
         let vpp = Viewport::new(w, h);
@@ -62,7 +63,7 @@ impl Render {
         let display_fb =
             Framebuffer::new(&ctx, vpp)?.with_color_slot(&ctx, display_texture);
 
-        let vp = Viewport::new(canvas.width(), canvas.height());
+        let pipeline = Pipeline::new(Viewport::new(canvas.width(), canvas.height()));
 
         let copy_program = shaders::setup_copy_program(&ctx)?;
 
@@ -75,7 +76,7 @@ impl Render {
             copy_program,
             state_fb,
             display_fb,
-            vp,
+            pipeline,
             color: true,
         })
     }
@@ -86,6 +87,7 @@ impl Render {
 
     pub fn frame(&mut self) -> Result<(), JsValue> {
         shaders::render_pipeline(
+            &self.pipeline,
             &self.ctx,
             if self.color {
                 &self.display_program
@@ -97,7 +99,6 @@ impl Render {
             &mut self.mesh,
             &mut self.state_fb,
             &mut self.display_fb,
-            self.vp,
         )
     }
 }
