@@ -1,13 +1,13 @@
-use gl::AttributeVector2;
+use gl::attributes::AttributeVector2;
 use gl::Ctx;
 use gl::Pipeline;
 use gl::mesh::Mesh;
+use gl::texture::ColorFramebuffer;
+use gl::texture::EmptyFramebuffer;
 use gl::texture::Framebuffer;
-use gl::texture::UploadedTexture;
 use wasm_bindgen::prelude::*;
 
 use std::collections::HashMap;
-use std::rc::Rc;
 
 use glsmrs as gl;
 
@@ -67,18 +67,18 @@ pub fn make_quad() -> ([[f32; 2]; 4], [[f32; 2]; 4], [u16; 6]) {
     (vertices, uvs, indices)
 }
 
-pub fn render_pipeline<'a>(
-    pipeline: &Pipeline,
-    ctx: &Ctx,
+pub fn render_pipeline(
+    pipeline: &mut Pipeline,
     display_program: &gl::Program,
     compute_program: &gl::Program,
     copy_program: &gl::Program,
-    mesh: &Mesh,
-    state_fb: &mut Framebuffer<Rc<UploadedTexture>, ()>,
-    display_fb: &mut Framebuffer<Rc<UploadedTexture>, ()>,
+    mesh: &mut Mesh,
+    state_fb: &mut ColorFramebuffer,
+    display_fb: &mut ColorFramebuffer,
+    d_fb: &mut EmptyFramebuffer,
 ) -> Result<(), JsValue> {
     let uniforms = vec![
-        ("canvasSize", gl::UniformData::Vector2(display_fb.dimensions())),
+        ("canvasSize", gl::UniformData::Vector2(display_fb.viewport().dimensions())),
         (
             "state",
             gl::UniformData::Texture(state_fb.color_slot()),
@@ -86,6 +86,9 @@ pub fn render_pipeline<'a>(
     ]
     .into_iter()
     .collect::<HashMap<_, _>>();
+
+    pipeline
+        .shade(&compute_program, uniforms, vec![mesh], display_fb)?;
 
     let copy_uniforms = vec![(
         "state",
@@ -95,8 +98,18 @@ pub fn render_pipeline<'a>(
     .collect::<HashMap<&'static str, gl::UniformData>>();
 
     pipeline
-        .shade(&ctx, &compute_program, &uniforms, vec![mesh], Some(display_fb))?
-        .shade(&ctx, &copy_program, &copy_uniforms, vec![mesh], Some(state_fb))?
-        .shade::<(), ()>(&ctx, &display_program, &uniforms, vec![mesh], None)?;
+        .shade(&copy_program, copy_uniforms, vec![mesh], state_fb)?;
+
+    let display_uniforms = vec![
+        (
+            "state",
+            gl::UniformData::Texture(state_fb.color_slot()),
+        ),
+    ]
+    .into_iter()
+    .collect::<HashMap<_, _>>();
+
+    pipeline
+        .shade(&display_program, display_uniforms, vec![mesh], d_fb)?;
     Ok(())
 }

@@ -2,31 +2,32 @@ use std::ops::Not;
 
 use gl::Pipeline;
 use gl::texture::ColorFormat;
+use gl::texture::ColorFramebuffer;
+use gl::texture::EmptyFramebuffer;
+use gl::texture::InternalFormat;
 use wasm_bindgen::prelude::*;
 
 use glsmrs as gl;
 use gl::Ctx;
 use gl::GL;
 use gl::texture::TextureSpec;
-use gl::{texture::{Framebuffer, Viewport, UploadedTexture}, mesh::Mesh};
+use gl::{texture::Viewport, mesh::Mesh};
 
 mod shaders;
 
 #[wasm_bindgen]
 pub struct Render {
-    ctx: Ctx,
     mesh: Mesh,
     display_program: gl::Program,
     monochrome_display_program: gl::Program,
     compute_program: gl::Program,
     copy_program: gl::Program,
-    state_fb: Framebuffer<Rc<UploadedTexture>, ()>,
-    display_fb: Framebuffer<Rc<UploadedTexture>, ()>,
+    state_fb: ColorFramebuffer,
+    display_fb: ColorFramebuffer,
+    d_fb: EmptyFramebuffer,
     pipeline: Pipeline,
     color: bool,
 }
-
-use std::rc::Rc;
 
 #[wasm_bindgen]
 impl Render {
@@ -53,22 +54,22 @@ impl Render {
             .flat_map(|v: u32| v.to_ne_bytes().to_vec())
             .collect::<Vec<u8>>();
 
-        let state_texture = Rc::new(texture_spec.upload_u8(&ctx, &tex_state)?);
-        let display_texture = Rc::new(texture_spec.upload(&ctx, None)?);
+        let state_texture = texture_spec.upload_u8(&ctx, &tex_state)?;
+        let display_texture = texture_spec.upload(&ctx, InternalFormat(GL::UNSIGNED_BYTE), None)?;
 
         let vpp = Viewport::new(w, h);
 
         let state_fb =
-            Framebuffer::new(&ctx, vpp)?.with_color_slot(&ctx, state_texture);
+            EmptyFramebuffer::new(&ctx, vpp).with_color_slot(state_texture)?;
         let display_fb =
-            Framebuffer::new(&ctx, vpp)?.with_color_slot(&ctx, display_texture);
+            EmptyFramebuffer::new(&ctx, vpp).with_color_slot(display_texture)?;
+        let d_fb = EmptyFramebuffer::new(&ctx, Viewport::new(canvas.width(), canvas.height()));
 
-        let pipeline = Pipeline::new(Viewport::new(canvas.width(), canvas.height()));
+        let pipeline = Pipeline::new(&ctx);
 
         let copy_program = shaders::setup_copy_program(&ctx)?;
 
         Ok(Self {
-            ctx,
             mesh,
             display_program,
             monochrome_display_program,
@@ -76,6 +77,7 @@ impl Render {
             copy_program,
             state_fb,
             display_fb,
+            d_fb,
             pipeline,
             color: true,
         })
@@ -87,8 +89,7 @@ impl Render {
 
     pub fn frame(&mut self) -> Result<(), JsValue> {
         shaders::render_pipeline(
-            &self.pipeline,
-            &self.ctx,
+            &mut self.pipeline,
             if self.color {
                 &self.display_program
             } else {
@@ -99,6 +100,7 @@ impl Render {
             &mut self.mesh,
             &mut self.state_fb,
             &mut self.display_fb,
+            &mut self.d_fb,
         )
     }
 }
