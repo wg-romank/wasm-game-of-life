@@ -1,6 +1,8 @@
 # Convay's Game of Life in Rust/WASM/WebGL
 
-![](media/animated.gif)
+<p align="center">
+    <img src="/docs/preview.png">
+</p>
 
 https://wg-romank.github.io/wasm-game-of-life/
 
